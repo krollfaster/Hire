@@ -16,23 +16,21 @@ interface NavItem {
     href: string;
     label: string;
     icon: React.ReactNode;
+    disabled?: boolean;
 }
 
 const navItems: NavItem[] = [
     { href: "/builder", label: "Написать", icon: <PenLine size={20} /> },
-    { href: "/dashboard", label: "Резюме", icon: <FileUser size={20} /> },
-    { href: "/messages", label: "Чат", icon: <MessageCircle size={20} /> },
+    { href: "/messages", label: "Чат", icon: <MessageCircle size={20} />, disabled: true },
+    { href: "/dashboard", label: "Резюме", icon: <FileUser size={20} />, disabled: true },
 ];
 
 export const Sidebar = () => {
     const pathname = usePathname();
 
     return (
-        <motion.aside
-            initial={{ x: -10, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            transition={{ duration: 0.3 }}
-            className="top-0 left-0 z-40 fixed flex flex-col items-center bg-sidebar py-5 border-border w-20 h-screen"
+        <aside
+            className="top-0 left-0 z-40 fixed flex flex-col items-center bg-sidebar py-5 border-border w-24 h-screen"
         >
             {/* Logo */}
             <Link href="/" className="mb-6">
@@ -55,23 +53,23 @@ export const Sidebar = () => {
                     const isActive = pathname === item.href || pathname?.startsWith(item.href + "/");
 
                     return (
-                        <Link key={item.href} href={item.href}>
+                        <Link
+                            key={item.href}
+                            href={item.disabled ? "#" : item.href}
+                            className={cn(item.disabled && "pointer-events-none cursor-default")}
+                            aria-disabled={item.disabled}
+                        >
                             <motion.div
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
+                                whileHover={!item.disabled ? { scale: 1.05 } : {}}
+                                whileTap={!item.disabled ? { scale: 0.95 } : {}}
                                 className={cn(
                                     "relative flex flex-col justify-center items-center gap-1 px-3 py-3 rounded-xl text-center transition-colors",
-                                    isActive
-                                        ? "bg-primary/10 text-primary"
-                                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                                    !item.disabled && isActive
+                                        ? "text-foreground"
+                                        : "text-muted-foreground hover:text-foreground",
+                                    item.disabled && "opacity-50 text-muted-foreground"
                                 )}
                             >
-                                {isActive && (
-                                    <motion.div
-                                        layoutId="activeNavCollapsed"
-                                        className="top-1/2 -left-3 absolute bg-primary rounded-r-full w-1 h-6 -translate-y-1/2"
-                                    />
-                                )}
                                 {item.icon}
                                 <span className="font-medium text-[10px] leading-tight">{item.label}</span>
                             </motion.div>
@@ -82,15 +80,10 @@ export const Sidebar = () => {
 
             {/* Settings at bottom */}
             <div className="mt-auto pt-4">
-                <Link href="/settings">
+                <Link href="#" className="cursor-default pointer-events-none" aria-disabled={true}>
                     <motion.div
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
                         className={cn(
-                            "flex flex-col justify-center items-center gap-1 px-3 py-3 rounded-xl text-center transition-colors",
-                            pathname === "/settings"
-                                ? "bg-primary/10 text-primary"
-                                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                            "flex flex-col justify-center items-center gap-1 opacity-50 px-3 py-3 rounded-xl text-muted-foreground text-center transition-colors"
                         )}
                     >
                         <Settings size={20} />
@@ -98,6 +91,6 @@ export const Sidebar = () => {
                     </motion.div>
                 </Link>
             </div>
-        </motion.aside>
+        </aside>
     );
 };

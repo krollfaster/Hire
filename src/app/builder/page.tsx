@@ -1,13 +1,14 @@
-"use client";
-
-import { AppShell } from "@/components/layout";
+import { AppShell, ChatPanel } from "@/components/layout";
 
 export default function BuilderPage() {
     return (
         <AppShell>
-            <div className="mx-auto max-w-3xl">
-                <div className="bg-card p-6 border border-border rounded-xl">
-                    <p className="text-muted-foreground">Редактор историй скоро будет...</p>
+            <div className="flex w-full h-full">
+                <ChatPanel />
+                <div className="flex flex-col flex-1 justify-center items-center bg-card p-6">
+                    <div className="text-center">
+                        <p className="text-muted-foreground">Здесь будет визуализация резюме</p>
+                    </div>
                 </div>
             </div>
         </AppShell>
