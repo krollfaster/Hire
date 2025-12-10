@@ -92,13 +92,13 @@
   --popover-foreground: oklch(0.98 0 0);
   --primary: oklch(0.65 0.25 270);
   /* Bright Indigo */
-  --primary-foreground: oklch(0.12 0 0);
+  --primary-foreground: oklch(0.98 0 0);
   --secondary: oklch(0.18 0.02 270);
   --secondary-foreground: oklch(0.98 0 0);
   --muted: oklch(0.18 0.02 270);
   --muted-foreground: oklch(0.65 0 0);
   --accent: oklch(0.65 0.25 270);
-  --accent-foreground: oklch(0.12 0 0);
+  --accent-foreground: oklch(0.98 0 0);
   --destructive: oklch(0.7 0.2 22);
   --border: oklch(1 0 0 / 8%);
   --input: oklch(1 0 0 / 12%);

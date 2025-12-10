@@ -68,7 +68,7 @@ export default function LandingPage() {
           transition={{ duration: 0.5, delay: 0.3 }}
           className="flex sm:flex-row flex-col gap-4"
         >
-          <Link href="/dashboard">
+          <Link href="/builder">
             <Button size="lg" className="gap-2 px-8 glow-primary">
               Присоединиться
               <ArrowRight size={18} />

@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { motion } from "framer-motion";
-import { Send } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Plus, SlidersHorizontal, ArrowUp, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+const MODELS = ["gemini-flash-latest", "gemini-2.0-flash-exp", "gemini-pro-latest"];
 
 interface Message {
     id: string;
@@ -16,6 +17,8 @@ export const ChatPanel = () => {
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+    const [selectedModel, setSelectedModel] = useState(MODELS[0]);
+    const [isModelPickerOpen, setIsModelPickerOpen] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     const scrollToBottom = () => {
@@ -26,7 +29,7 @@ export const ChatPanel = () => {
         scrollToBottom();
     }, [messages]);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!input.trim() || isLoading) return;
 
@@ -37,32 +40,59 @@ export const ChatPanel = () => {
             timestamp: new Date(),
         };
 
-        setMessages((prev) => [...prev, userMessage]);
+        const newMessages = [...messages, userMessage];
+        setMessages(newMessages);
         setInput("");
         setIsLoading(true);
 
-        // Имитация ответа ИИ
-        setTimeout(() => {
+        try {
+            const response = await fetch("/api/chat", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    messages: newMessages,
+                    model: selectedModel,
+                }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || "Failed to fetch response");
+            }
+
+            const data = await response.json();
+
             const assistantMessage: Message = {
                 id: (Date.now() + 1).toString(),
-                content: "Спасибо за информацию! Я проанализирую ваш опыт и выделю ключевые навыки для резюме.",
+                content: data.content,
                 role: "assistant",
                 timestamp: new Date(),
             };
+
             setMessages((prev) => [...prev, assistantMessage]);
+        } catch (error) {
+            console.error(error);
+            const errorMessage: Message = {
+                id: (Date.now() + 1).toString(),
+                content: "Извините, произошла ошибка при обращении к ИИ.",
+                role: "assistant",
+                timestamp: new Date(),
+            };
+            setMessages((prev) => [...prev, errorMessage]);
+        } finally {
             setIsLoading(false);
-        }, 1000);
+        }
     };
 
     return (
         <div className="flex flex-col bg-background border-border border-r w-[400px] h-full">
             {/* Header */}
             <div className="flex items-center px-6 border-border border-b h-16">
-                <h2 className="font-bold text-foreground text-l">Чат с ИИ</h2>
+                <h2 className="font-bold text-foreground text-l">Опишите ваши достижения</h2>
             </div>
 
             {/* Messages */}
-            <div className="flex-1 space-y-4 p-4 overflow-y-auto">
+            <div className="flex-1 space-y-4 p-5 overflow-y-auto">
                 {messages.length === 0 && (
                     <div className="flex flex-col justify-center items-center h-full text-center">
                         <p className="text-muted-foreground text-sm">
@@ -101,28 +131,100 @@ export const ChatPanel = () => {
                 <div ref={messagesEndRef} />
             </div>
 
-            {/* Input */}
+            {/* Input & Model Selector */}
             <div className="p-4 border-border">
-                <form onSubmit={handleSubmit} className="relative">
+                <form
+                    onSubmit={handleSubmit}
+                    className="flex flex-col bg-muted/50 focus-within:bg-muted border border-border focus-within:border-primary/50 rounded-2xl transition-colors"
+                >
                     <input
                         type="text"
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
-                        placeholder="Опишите свой опыт..."
-                        className="bg-muted px-4 py-3 pr-12 border-0 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary w-full text-foreground placeholder:text-muted-foreground text-sm"
+                        placeholder="Напишите что нибудь...)"
+                        className="bg-transparent px-4 py-4 focus:outline-none w-full text-foreground placeholder:text-muted-foreground text-sm"
                     />
-                    <button
-                        type="submit"
-                        disabled={!input.trim() || isLoading}
-                        className={cn(
-                            "top-1/2 right-2 absolute p-2 rounded-lg transition-colors -translate-y-1/2",
-                            input.trim() && !isLoading
-                                ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                                : "text-muted-foreground"
-                        )}
-                    >
-                        <Send size={18} />
-                    </button>
+
+                    <div className="flex justify-between items-center px-2 pb-2">
+                        {/* Left Controls */}
+                        <div className="flex items-center gap-1">
+                            <button
+                                type="button"
+                                className="flex justify-center items-center hover:bg-background/50 rounded-lg w-8 h-8 text-muted-foreground hover:text-foreground transition-colors"
+                            >
+                                <Plus size={18} />
+                            </button>
+                            <button
+                                type="button"
+                                className="flex justify-center items-center hover:bg-background/50 rounded-lg w-8 h-8 text-muted-foreground hover:text-foreground transition-colors"
+                            >
+                                <SlidersHorizontal size={16} />
+                            </button>
+
+                            {/* Divider */}
+                            <div className="mx-1 bg-border w-px h-4" />
+
+                            {/* Model Selector */}
+                            <div className="relative">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsModelPickerOpen(!isModelPickerOpen)}
+                                    className="flex items-center gap-1.5 hover:bg-background/50 px-2 py-1.5 rounded-lg text-foreground text-xs transition-colors"
+                                >
+                                    <span className="font-medium">{selectedModel}</span>
+                                    <ChevronDown
+                                        size={12}
+                                        className={cn("opacity-50 transition-transform", isModelPickerOpen && "rotate-180")}
+                                    />
+                                </button>
+
+                                {/* Dropdown */}
+                                <AnimatePresence>
+                                    {isModelPickerOpen && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                                            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                            className="bottom-full left-0 z-50 absolute bg-popover/80 shadow-lg backdrop-blur-lg mb-2 p-1 border border-border rounded-lg w-48"
+                                        >
+                                            {MODELS.map((model) => (
+                                                <button
+                                                    key={model}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setSelectedModel(model);
+                                                        setIsModelPickerOpen(false);
+                                                    }}
+                                                    className={cn(
+                                                        "px-3 py-2 rounded-md w-full text-xs text-left transition-colors",
+                                                        selectedModel === model
+                                                            ? "bg-primary/20 text-primary"
+                                                            : "text-foreground hover:bg-muted"
+                                                    )}
+                                                >
+                                                    {model}
+                                                </button>
+                                            ))}
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+                        </div>
+
+                        {/* Right: Send Button */}
+                        <button
+                            type="submit"
+                            disabled={!input.trim() || isLoading}
+                            className={cn(
+                                "flex justify-center items-center rounded-xl w-8 h-8 transition-all duration-200",
+                                input.trim() && !isLoading
+                                    ? "bg-primary text-primary-foreground hover:opacity-90 shadow-sm"
+                                    : "bg-muted-foreground/20 text-muted-foreground cursor-not-allowed"
+                            )}
+                        >
+                            <ArrowUp size={16} strokeWidth={2.5} />
+                        </button>
+                    </div>
                 </form>
             </div>
         </div>
