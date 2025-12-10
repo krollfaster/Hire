@@ -7,6 +7,7 @@ export async function POST(req: Request) {
         const apiKey = process.env.GEMINI_API_KEY;
 
         if (!apiKey) {
+            console.error("❌ GEMINI_API_KEY is missing in environment variables!");
             return NextResponse.json(
                 { error: "GEMINI_API_KEY is not set" },
                 { status: 500 }
