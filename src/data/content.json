@@ -1,0 +1,16 @@
+{
+  "categories": ["hard_skills", "impact", "domain", "superpower"],
+  "categoryLabels": {
+    "hard_skills": "Навыки",
+    "impact": "Результаты",
+    "domain": "Сферы",
+    "superpower": "Суперсила"
+  },
+  "relationTypes": {
+    "uses": "Использует",
+    "enables": "Позволяет",
+    "part_of": "Часть",
+    "related": "Связано"
+  },
+  "traits": []
+}
