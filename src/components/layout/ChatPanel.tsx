@@ -2,7 +2,13 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, SlidersHorizontal, ArrowUp, ChevronDown, Briefcase, Pencil, X, Trash2, Check } from "lucide-react";
+import { Plus, ArrowUp, ChevronDown, Briefcase, Pencil, X, Trash2, Check, Mic } from "lucide-react";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useTraitsStore, TraitAction } from "@/stores/useTraitsStore";
 
@@ -557,18 +563,21 @@ export const ChatPanel = () => {
                         <div className="flex justify-between items-center px-2 pb-2">
                             {/* Left Controls */}
                             <div className="flex items-center gap-1">
-                                <button
-                                    type="button"
-                                    className="flex justify-center items-center hover:bg-background/50 rounded-lg w-8 h-8 text-muted-foreground hover:text-foreground transition-colors"
-                                >
-                                    <Plus size={18} />
-                                </button>
-                                <button
-                                    type="button"
-                                    className="flex justify-center items-center hover:bg-background/50 rounded-lg w-8 h-8 text-muted-foreground hover:text-foreground transition-colors"
-                                >
-                                    <SlidersHorizontal size={16} />
-                                </button>
+                                <TooltipProvider delayDuration={300}>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <button
+                                                type="button"
+                                                className="flex justify-center items-center hover:bg-background/50 rounded-lg w-8 h-8 text-muted-foreground hover:text-foreground transition-colors"
+                                            >
+                                                <Mic size={16} />
+                                            </button>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="top" className="max-w-[200px] text-center">
+                                            <p>Скоро появится голосовой режим — заполняйте навыки голосом, как на собеседовании</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
 
                                 {/* Divider */}
                                 <div className="mx-1 bg-border w-px h-4" />
