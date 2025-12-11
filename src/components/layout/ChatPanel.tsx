@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, ArrowUp, ChevronDown, Briefcase, Pencil, X, Trash2, Check, Mic } from "lucide-react";
+import { Plus, ArrowUp, ChevronDown, Briefcase, Pencil, X, Trash2, Check, Mic, Zap, Sparkles, Brain, Crown, Rocket, Lock } from "lucide-react";
 import {
     Tooltip,
     TooltipContent,
