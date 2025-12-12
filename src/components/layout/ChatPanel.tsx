@@ -2,21 +2,73 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, ArrowUp, ChevronDown, Briefcase, Pencil, X, Trash2, Check, Mic, Zap, Sparkles, Brain, Crown, Rocket, Lock } from "lucide-react";
+import {
+    Plus,
+    ArrowUp,
+    ChevronDown,
+    Briefcase,
+    Pencil,
+    X,
+    Trash2,
+    Check,
+    Mic,
+    Zap,
+    Sparkles,
+    Brain,
+    Lock,
+    type LucideIcon,
+} from "lucide-react";
 import {
     Tooltip,
     TooltipContent,
     TooltipProvider,
     TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useTraitsStore, TraitAction } from "@/stores/useTraitsStore";
 
-const MODELS = [
-    "google/gemini-2.0-flash-001",
-    "anthropic/claude-3.5-sonnet",
-    "openai/gpt-4o-mini",
-    "meta-llama/llama-3.3-70b-instruct",
+type ModelOption = {
+    id: string;
+    label: string;
+    provider: string;
+    icon: LucideIcon;
+    isPremium?: boolean;
+};
+
+const MODEL_OPTIONS: ModelOption[] = [
+    {
+        id: "google/gemini-2.0-flash-001",
+        label: "Gemini Flash",
+        provider: "Google",
+        icon: Sparkles,
+    },
+    {
+        id: "nex-agi/deepseek-v3.1-nex-n1:free",
+        label: "DeepSeek V3.1",
+        provider: "DeepSeek",
+        icon: Sparkles,
+    },
+    {
+        id: "mistralai/devstral-2512:free",
+        label: "Devstral 2512",
+        provider: "Mistral",
+        icon: Sparkles,
+    },
+    {
+        id: "openai/gpt-4.1",
+        label: "GPT-4.1",
+        provider: "OpenAI",
+        icon: Sparkles,
+        isPremium: true,
+    },
+    {
+        id: "meta-llama/llama-3.3-70b-instruct",
+        label: "Llama 3.3 70B",
+        provider: "Llama",
+        icon: Brain,
+        isPremium: true,
+    },
 ];
 
 interface Message {
@@ -204,7 +256,9 @@ export const ChatPanel = () => {
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
-    const [selectedModel, setSelectedModel] = useState(MODELS[0]);
+    const [selectedModel, setSelectedModel] = useState(
+        MODEL_OPTIONS.find((model) => !model.isPremium)?.id || MODEL_OPTIONS[0].id
+    );
     const [isModelPickerOpen, setIsModelPickerOpen] = useState(false);
     const [workplaces, setWorkplaces] = useState<Workplace[]>([]);
     const [selectedWorkplace, setSelectedWorkplace] = useState<Workplace | null>(null);
@@ -471,17 +525,18 @@ export const ChatPanel = () => {
                                 Создайте своё первое место работы
                             </p>
                             <p className="text-muted-foreground text-sm mb-6">
-                                Расскажите о ваших достижениях и опыте работы.
-                                <br />
-                                ИИ поможет выделить ключевые моменты для резюме.
+                                Расскажите о ваших достижениях и опыте работы. ИИ поможет выделить ключевые
+                                моменты для резюме.
                             </p>
-                            <button
+                            <Button
+                                type="button"
+                                size="default"
                                 onClick={() => setIsWorkplaceModalOpen(true)}
-                                className="px-6 py-3 rounded-xl bg-primary text-primary-foreground hover:opacity-90 transition-opacity font-medium flex items-center gap-2"
+                                className="rounded-lg"
                             >
-                                <Plus size={18} />
+                                <Plus size={16} />
                                 Создать место работы
-                            </button>
+                            </Button>
                         </div>
                     ) : (
                         <>
@@ -492,9 +547,7 @@ export const ChatPanel = () => {
                                         <span className="font-medium text-foreground">
                                             {selectedWorkplace.companyName}
                                         </span>
-                                        .
-                                        <br />
-                                        ИИ поможет выделить ключевые моменты для резюме.
+                                        . ИИ поможет выделить ключевые моменты для резюме.
                                     </p>
                                 </div>
                             )}
@@ -589,7 +642,23 @@ export const ChatPanel = () => {
                                         onClick={() => setIsModelPickerOpen(!isModelPickerOpen)}
                                         className="flex items-center gap-1.5 hover:bg-background/50 px-2 py-1.5 rounded-lg text-foreground text-xs transition-colors"
                                     >
-                                        <span className="font-medium">{selectedModel}</span>
+                                        {(() => {
+                                            const currentModel =
+                                                MODEL_OPTIONS.find((model) => model.id === selectedModel) ||
+                                                MODEL_OPTIONS[0];
+                                            const Icon = currentModel.icon;
+                                            return (
+                                                <>
+                                                    <Icon size={14} className="text-muted-foreground" />
+                                                    <span className="font-medium truncate">
+                                                        {currentModel.label}
+                                                    </span>
+                                                    <span className="text-muted-foreground text-[11px] truncate">
+                                                        · {currentModel.provider}
+                                                    </span>
+                                                </>
+                                            );
+                                        })()}
                                         <ChevronDown
                                             size={12}
                                             className={cn(
@@ -606,26 +675,69 @@ export const ChatPanel = () => {
                                                 initial={{ opacity: 0, y: 10, scale: 0.95 }}
                                                 animate={{ opacity: 1, y: 0, scale: 1 }}
                                                 exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                                className="bottom-full left-0 z-50 absolute bg-popover/80 shadow-lg backdrop-blur-lg mb-2 p-1 border border-border rounded-lg w-48"
+                                                className="bottom-full left-0 z-50 absolute bg-popover/80 shadow-lg backdrop-blur-lg mb-2 p-1 border border-border rounded-lg w-56"
                                             >
-                                                {MODELS.map((model) => (
-                                                    <button
-                                                        key={model}
-                                                        type="button"
-                                                        onClick={() => {
-                                                            setSelectedModel(model);
-                                                            setIsModelPickerOpen(false);
-                                                        }}
-                                                        className={cn(
-                                                            "px-3 py-2 rounded-md w-full text-xs text-left transition-colors",
-                                                            selectedModel === model
-                                                                ? "bg-primary/20 text-primary"
-                                                                : "text-foreground hover:bg-muted"
-                                                        )}
-                                                    >
-                                                        {model}
-                                                    </button>
-                                                ))}
+                                                {MODEL_OPTIONS.map((model) => {
+                                                    const Icon = model.icon;
+                                                    const isSelected = selectedModel === model.id;
+                                                    const isLocked = model.isPremium;
+                                                    const buttonClasses = cn(
+                                                        "flex items-center gap-2 px-3 py-2.5 rounded-md w-full text-left transition-colors",
+                                                        isLocked
+                                                            ? "opacity-60 cursor-not-allowed"
+                                                            : "hover:bg-muted",
+                                                        isSelected && !isLocked && "bg-primary/15 text-primary"
+                                                    );
+
+                                                    const content = (
+                                                        <button
+                                                            key={model.id}
+                                                            type="button"
+                                                            aria-disabled={isLocked}
+                                                            onClick={() => {
+                                                                if (isLocked) return;
+                                                                setSelectedModel(model.id);
+                                                                setIsModelPickerOpen(false);
+                                                            }}
+                                                            className={buttonClasses}
+                                                        >
+                                                            <Icon
+                                                                size={16}
+                                                                className={cn(
+                                                                    "text-muted-foreground",
+                                                                    isSelected && !isLocked && "text-primary"
+                                                                )}
+                                                            />
+                                                            <div className="flex-1 min-w-0">
+                                                                <div className="text-sm font-medium truncate">
+                                                                    {model.label}
+                                                                </div>
+                                                                <div className="text-[11px] text-muted-foreground truncate">
+                                                                    {model.provider}
+                                                                    {isLocked ? " · Подписка" : ""}
+                                                                </div>
+                                                            </div>
+                                                            {isLocked ? (
+                                                                <Lock size={14} className="text-muted-foreground" />
+                                                            ) : (
+                                                                isSelected && <Check size={14} />
+                                                            )}
+                                                        </button>
+                                                    );
+
+                                                    return isLocked ? (
+                                                        <TooltipProvider key={model.id} delayDuration={150}>
+                                                            <Tooltip>
+                                                                <TooltipTrigger asChild>{content}</TooltipTrigger>
+                                                                <TooltipContent side="right" className="text-xs">
+                                                                    Модель доступна только по подписке
+                                                                </TooltipContent>
+                                                            </Tooltip>
+                                                        </TooltipProvider>
+                                                    ) : (
+                                                        content
+                                                    );
+                                                })}
                                             </motion.div>
                                         )}
                                     </AnimatePresence>

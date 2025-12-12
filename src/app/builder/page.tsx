@@ -7,6 +7,7 @@ import { TraitsGraph } from "@/components/graph/TraitsGraph";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import {
     Sheet,
     SheetContent,
@@ -243,9 +244,8 @@ function EmptyState({ message, showIcon = true }: { message?: string; showIcon?:
                         Ваш профиль пуст
                     </h3>
                     <p className="text-muted-foreground text-sm max-w-md">
-                        Расскажите ИИ о вашем опыте работы в чате слева.
-                        <br />
-                        Навыки, достижения и компетенции появятся здесь автоматически.
+                        Расскажите ИИ о вашем опыте работы в чате слева. Навыки, достижения и
+                        компетенции появятся здесь автоматически.
                     </p>
                 </>
             ) : (
@@ -516,11 +516,18 @@ function TraitsPanel() {
         <div className="flex flex-col h-full">
             {/* Header with Tabs and View Toggle */}
             <div className="flex items-center justify-between gap-4 mb-6">
-                <FilterTabs 
-                    activeTab={activeTab} 
-                    onTabChange={setActiveTab} 
-                    traits={traits}
-                />
+                <div className="flex items-center gap-3">
+                    <FilterTabs 
+                        activeTab={activeTab} 
+                        onTabChange={setActiveTab} 
+                        traits={traits}
+                    />
+                    {filteredTraits.length > 0 && (
+                        <Button size="sm" className="shadow-sm">
+                            Создать резюме
+                        </Button>
+                    )}
+                </div>
 
                 {/* View Toggle */}
                 <ToggleGroup 

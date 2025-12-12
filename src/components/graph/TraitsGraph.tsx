@@ -285,9 +285,7 @@ export function TraitsGraph({ traits }: TraitsGraphProps) {
                     Нет элементов для отображения
                 </h3>
                 <p className="text-muted-foreground text-sm max-w-md">
-                    Добавьте навыки и достижения через чат
-                    <br />
-                    или выберите другую категорию.
+                    Добавьте навыки и достижения через чат или выберите другую категорию.
                 </p>
             </div>
         );
