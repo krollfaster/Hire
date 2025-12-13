@@ -5,28 +5,23 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
     Plus,
     ArrowUp,
-    ChevronDown,
-    Briefcase,
-    Pencil,
-    X,
-    Trash2,
-    Check,
     Mic,
     Zap,
     Sparkles,
     Brain,
     Lock,
+    ChevronDown,
+    Check,
+    Trash2,
+    X,
     type LucideIcon,
 } from "lucide-react";
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useTraitsStore, TraitAction } from "@/stores/useTraitsStore";
+import { useResumeStore } from "@/stores/useResumeStore";
+import { useChatStore } from "@/stores/useChatStore";
 
 type ModelOption = {
     id: string;
@@ -253,22 +248,18 @@ const WorkplaceModal = ({
 };
 
 export const ChatPanel = () => {
-    const [messages, setMessages] = useState<Message[]>([]);
+    const { messages, setMessages } = useChatStore();
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [selectedModel, setSelectedModel] = useState(
         MODEL_OPTIONS.find((model) => !model.isPremium)?.id || MODEL_OPTIONS[0].id
     );
     const [isModelPickerOpen, setIsModelPickerOpen] = useState(false);
-    const [workplaces, setWorkplaces] = useState<Workplace[]>([]);
-    const [selectedWorkplace, setSelectedWorkplace] = useState<Workplace | null>(null);
-    const [isWorkplaceModalOpen, setIsWorkplaceModalOpen] = useState(false);
-    const [editingWorkplace, setEditingWorkplace] = useState<Workplace | null>(null);
-    const [isWorkplacePickerOpen, setIsWorkplacePickerOpen] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     // Connect to traits store
     const { applyActions, getContextForAI } = useTraitsStore();
+    const { setChatContext } = useResumeStore();
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -278,62 +269,16 @@ export const ChatPanel = () => {
         scrollToBottom();
     }, [messages]);
 
-    const handleCreateWorkplace = (workplaceData: Omit<Workplace, "id">) => {
-        const newWorkplace: Workplace = {
-            id: Date.now().toString(),
-            ...workplaceData,
-        };
-        setWorkplaces((prev) => [...prev, newWorkplace]);
-        setSelectedWorkplace(newWorkplace);
-        setEditingWorkplace(null);
-    };
-
-    const handleEditWorkplace = (workplaceData: Omit<Workplace, "id">) => {
-        if (!editingWorkplace) return;
-        const updatedWorkplace: Workplace = {
-            ...editingWorkplace,
-            ...workplaceData,
-        };
-        setWorkplaces((prev) =>
-            prev.map((w) => (w.id === editingWorkplace.id ? updatedWorkplace : w))
-        );
-        if (selectedWorkplace?.id === editingWorkplace.id) {
-            setSelectedWorkplace(updatedWorkplace);
-        }
-        setEditingWorkplace(null);
-    };
-
-    const handleDeleteWorkplace = () => {
-        if (!editingWorkplace) return;
-        const remainingWorkplaces = workplaces.filter((w) => w.id !== editingWorkplace.id);
-        setWorkplaces(remainingWorkplaces);
-        if (selectedWorkplace?.id === editingWorkplace.id) {
-            setSelectedWorkplace(remainingWorkplaces.length > 0 ? remainingWorkplaces[0] : null);
-        }
-        setEditingWorkplace(null);
-    };
-
-    const openEditModal = () => {
-        if (selectedWorkplace) {
-            setEditingWorkplace(selectedWorkplace);
-            setIsWorkplaceModalOpen(true);
-        }
-    };
-
-    const openCreateModal = () => {
-        setEditingWorkplace(null);
-        setIsWorkplaceModalOpen(true);
-    };
-
-    const selectWorkplace = (workplace: Workplace) => {
-        setSelectedWorkplace(workplace);
-        setIsWorkplacePickerOpen(false);
-        setMessages([]); // Clear messages when switching workplace
-    };
+    useEffect(() => {
+        setChatContext({
+            messages: messages.map((m) => ({ role: m.role, content: m.content })),
+            workplace: null,
+        });
+    }, [messages, setChatContext]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!input.trim() || isLoading || !selectedWorkplace) return;
+        if (!input.trim() || isLoading) return;
 
         const userMessage: Message = {
             id: Date.now().toString(),
@@ -381,7 +326,7 @@ export const ChatPanel = () => {
                 timestamp: new Date(),
             };
 
-            setMessages((prev) => [...prev, assistantMessage]);
+            setMessages([...newMessages, assistantMessage]);
         } catch (error) {
             console.error("Chat error:", error);
             const errorMessage: Message = {
@@ -393,164 +338,30 @@ export const ChatPanel = () => {
                 role: "assistant",
                 timestamp: new Date(),
             };
-            setMessages((prev) => [...prev, errorMessage]);
+            setMessages([...messages, errorMessage]);
         } finally {
             setIsLoading(false);
         }
     };
 
-    const hasWorkplace = selectedWorkplace !== null;
-
     return (
         <>
-            <WorkplaceModal
-                isOpen={isWorkplaceModalOpen}
-                onClose={() => {
-                    setIsWorkplaceModalOpen(false);
-                    setEditingWorkplace(null);
-                }}
-                onSave={editingWorkplace ? handleEditWorkplace : handleCreateWorkplace}
-                onDelete={editingWorkplace ? handleDeleteWorkplace : undefined}
-                workplace={editingWorkplace}
-            />
-
             <div className="flex flex-col bg-background border-border border-r w-[400px] h-full">
                 {/* Header */}
                 <div className="flex items-center justify-between px-5 border-border border-b h-[54px]">
-                    {hasWorkplace ? (
-                        <>
-                            <div className="relative flex-1 min-w-0">
-                                <button
-                                    onClick={() => setIsWorkplacePickerOpen(!isWorkplacePickerOpen)}
-                                    className="flex items-center gap-2 min-w-0 hover:bg-muted/50 px-2 py-1.5 -ml-2 rounded-lg transition-colors"
-                                >
-                                    <Briefcase size={16} className="text-muted-foreground shrink-0" />
-                                    <span className="font-bold text-foreground truncate">
-                                        {selectedWorkplace.companyName}
-                                    </span>
-                                    <span className="text-muted-foreground text-sm truncate">
-                                        · {selectedWorkplace.position}
-                                    </span>
-                                    <ChevronDown
-                                        size={14}
-                                        className={cn(
-                                            "text-muted-foreground shrink-0 transition-transform",
-                                            isWorkplacePickerOpen && "rotate-180"
-                                        )}
-                                    />
-                                </button>
-
-                                {/* Workplace Picker Dropdown */}
-                                <AnimatePresence>
-                                    {isWorkplacePickerOpen && (
-                                        <motion.div
-                                            initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                                            exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                                            className="absolute top-full left-0 z-50 mt-1 bg-popover/95 shadow-lg backdrop-blur-lg p-1 border border-border rounded-xl w-full min-w-[280px]"
-                                        >
-                                            <div className="max-h-[240px] overflow-y-auto">
-                                                {workplaces.map((workplace) => (
-                                                    <button
-                                                        key={workplace.id}
-                                                        onClick={() => selectWorkplace(workplace)}
-                                                        className={cn(
-                                                            "flex items-center gap-2 px-3 py-2.5 rounded-lg w-full text-left transition-colors",
-                                                            selectedWorkplace?.id === workplace.id
-                                                                ? "bg-primary/10 text-primary"
-                                                                : "text-foreground hover:bg-muted"
-                                                        )}
-                                                    >
-                                                        <Briefcase size={14} className="shrink-0 opacity-60" />
-                                                        <div className="flex-1 min-w-0">
-                                                            <div className="font-medium text-sm truncate">
-                                                                {workplace.companyName}
-                                                            </div>
-                                                            <div className="text-xs text-muted-foreground truncate">
-                                                                {workplace.position}
-                                                            </div>
-                                                        </div>
-                                                        {selectedWorkplace?.id === workplace.id && (
-                                                            <Check size={14} className="shrink-0" />
-                                                        )}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                            <div className="border-t border-border mt-1 pt-1">
-                                                <button
-                                                    onClick={() => {
-                                                        setIsWorkplacePickerOpen(false);
-                                                        openCreateModal();
-                                                    }}
-                                                    className="flex items-center gap-2 px-3 py-2.5 rounded-lg w-full text-left text-primary hover:bg-primary/10 transition-colors"
-                                                >
-                                                    <Plus size={14} />
-                                                    <span className="text-sm font-medium">Добавить место работы</span>
-                                                </button>
-                                            </div>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-                            </div>
-                            <div className="flex items-center gap-1 shrink-0">
-                                <button
-                                    onClick={openCreateModal}
-                                    className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                                    title="Добавить место работы"
-                                >
-                                    <Plus size={16} />
-                                </button>
-                                <button
-                                    onClick={openEditModal}
-                                    className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                                    title="Редактировать"
-                                >
-                                    <Pencil size={14} />
-                                </button>
-                            </div>
-                        </>
-                    ) : (
-                        <h2 className="font-bold text-foreground">Опишите ваши достижения</h2>
-                    )}
+                    <h2 className="font-bold text-foreground">Опишите ваши достижения</h2>
                 </div>
 
                 {/* Messages / Empty State */}
                 <div className="flex-1 space-y-4 p-5 overflow-y-auto">
-                    {!hasWorkplace ? (
+                    {messages.length === 0 ? (
                         <div className="flex flex-col justify-center items-center h-full text-center px-4">
-                            <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
-                                <Briefcase size={28} className="text-primary" />
-                            </div>
-                            <p className="text-foreground font-medium mb-2">
-                                Создайте своё первое место работы
+                            <p className="text-muted-foreground text-sm">
+                                Опишите свой опыт работы и достижения. ИИ поможет выделить ключевые моменты для резюме.
                             </p>
-                            <p className="text-muted-foreground text-sm mb-6">
-                                Расскажите о ваших достижениях и опыте работы. ИИ поможет выделить ключевые
-                                моменты для резюме.
-                            </p>
-                            <Button
-                                type="button"
-                                size="default"
-                                onClick={() => setIsWorkplaceModalOpen(true)}
-                                className="rounded-lg"
-                            >
-                                <Plus size={16} />
-                                Создать место работы
-                            </Button>
                         </div>
                     ) : (
                         <>
-                            {messages.length === 0 && (
-                                <div className="flex flex-col justify-center items-center h-full text-center">
-                                    <p className="text-muted-foreground text-sm">
-                                        Опишите свой опыт работы и достижения в{" "}
-                                        <span className="font-medium text-foreground">
-                                            {selectedWorkplace.companyName}
-                                        </span>
-                                        . ИИ поможет выделить ключевые моменты для резюме.
-                                    </p>
-                                </div>
-                            )}
                             {messages.map((message) => (
                                 <motion.div
                                     key={message.id}
@@ -596,20 +407,14 @@ export const ChatPanel = () => {
                     <form
                         onSubmit={handleSubmit}
                         className={cn(
-                            "flex flex-col bg-muted/50 focus-within:bg-muted border border-border focus-within:border-primary/50 rounded-2xl transition-colors",
-                            !hasWorkplace && "opacity-50 pointer-events-none"
+                            "flex flex-col bg-muted/50 focus-within:bg-muted border border-border focus-within:border-primary/50 rounded-2xl transition-colors"
                         )}
                     >
                         <input
                             type="text"
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
-                            placeholder={
-                                hasWorkplace
-                                    ? "Напишите что-нибудь..."
-                                    : "Сначала создайте место работы"
-                            }
-                            disabled={!hasWorkplace}
+                            placeholder="Напишите что-нибудь..."
                             className="bg-transparent px-4 py-4 focus:outline-none w-full text-foreground placeholder:text-muted-foreground text-sm"
                         />
 
@@ -747,10 +552,10 @@ export const ChatPanel = () => {
                             {/* Right: Send Button */}
                             <button
                                 type="submit"
-                                disabled={!input.trim() || isLoading || !hasWorkplace}
+                                disabled={!input.trim() || isLoading}
                                 className={cn(
                                     "flex justify-center items-center rounded-xl w-8 h-8 transition-all duration-200",
-                                    input.trim() && !isLoading && hasWorkplace
+                                    input.trim() && !isLoading
                                         ? "bg-primary text-primary-foreground hover:opacity-90 shadow-sm"
                                         : "bg-muted-foreground/20 text-muted-foreground cursor-not-allowed"
                                 )}

@@ -22,7 +22,7 @@ interface NavItem {
 const navItems: NavItem[] = [
     { href: "/builder", label: "Написать", icon: <PenLine size={20} /> },
     { href: "/messages", label: "Чат", icon: <MessageCircle size={20} />, disabled: true },
-    { href: "/dashboard", label: "Резюме", icon: <FileUser size={20} />, disabled: true },
+    { href: "/dashboard", label: "Резюме", icon: <FileUser size={20} /> },
 ];
 
 export const Sidebar = () => {

@@ -1,13 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { AppShell, ChatPanel } from "@/components/layout";
 import { useTraitsStore, Trait, TraitCategory } from "@/stores/useTraitsStore";
+import { useResumeStore } from "@/stores/useResumeStore";
 import { TraitsGraph } from "@/components/graph/TraitsGraph";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
     Sheet,
     SheetContent,
@@ -15,11 +18,10 @@ import {
     SheetTitle,
     SheetDescription,
 } from "@/components/ui/sheet";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { Star, Link2, LayoutGrid, GitBranch, ArrowRight } from "lucide-react";
+import { Star, Link2, LayoutGrid, GitBranch, ArrowRight, Loader2, Check, X, AlertCircle } from "lucide-react";
 
 type FilterTab = "all" | TraitCategory;
 type ViewMode = "cards" | "graph";
@@ -494,10 +496,32 @@ function FilterTabs({
 
 function TraitsPanel() {
     const traits = useTraitsStore((state) => state.traits);
+    const router = useRouter();
+    const { chatContext, addResume } = useResumeStore();
     const [viewMode, setViewMode] = useState<ViewMode>("graph");
     const [activeTab, setActiveTab] = useState<FilterTab>("all");
     const [selectedTrait, setSelectedTrait] = useState<Trait | null>(null);
     const [sheetOpen, setSheetOpen] = useState(false);
+    const [isResumeModalOpen, setIsResumeModalOpen] = useState(false);
+    const [resumeStatus, setResumeStatus] = useState<"idle" | "generating" | "success" | "error">("idle");
+    const [resumePreview, setResumePreview] = useState("");
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [abortController, setAbortController] = useState<AbortController | null>(null);
+    const statusPhrases = [
+        "Обрабатываем текст",
+        "Изучаем содержимое",
+        "Выделяем важные мысли",
+        "Собираем структуру",
+        "Полируем формулировки",
+        "Сверяем факты и роли",
+        "Сокращаем лишнее",
+        "Уточняем форматы дат",
+        "Проставляем ключевые навыки",
+        "Упорядочиваем достижения",
+        "Проверяем читабельность",
+        "Готовим финальный вариант",
+    ];
+    const [statusIndex, setStatusIndex] = useState(0);
 
     const getFilteredTraits = (tabId: FilterTab) => {
         let filtered = tabId === "all" ? traits : traits.filter(trait => trait.category === tabId);
@@ -512,18 +536,106 @@ function TraitsPanel() {
         setSheetOpen(true);
     };
 
+    const handleGenerateResume = async () => {
+        if (filteredTraits.length === 0) return;
+
+        const controller = new AbortController();
+        setAbortController(controller);
+        setIsResumeModalOpen(true);
+        setResumeStatus("generating");
+        setStatusIndex(0);
+        setErrorMessage(null);
+
+        try {
+            const response = await fetch("/api/resume", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                signal: controller.signal,
+                body: JSON.stringify({
+                    traits,
+                    chatContext,
+                }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || "Не удалось сгенерировать резюме");
+            }
+
+            const data = await response.json();
+            const resume = (data.resume as string | undefined)?.trim() || "";
+
+            addResume(resume);
+            setResumePreview(resume);
+            setResumeStatus("success");
+            setIsResumeModalOpen(false);
+            router.push("/dashboard");
+        } catch (error) {
+            if ((error as Error).name === "AbortError") {
+                setResumeStatus("idle");
+                return;
+            }
+            setErrorMessage(error instanceof Error ? error.message : "Что-то пошло не так");
+            setResumeStatus("error");
+        } finally {
+            setAbortController(null);
+        }
+    };
+
+    const handleCancel = () => {
+        abortController?.abort();
+        setAbortController(null);
+        setResumeStatus("idle");
+        setIsResumeModalOpen(false);
+    };
+
+    const handleCloseModal = () => {
+        if (resumeStatus === "generating") {
+            handleCancel();
+            return;
+        }
+        setIsResumeModalOpen(false);
+    };
+
+    const handleGoToResume = () => {
+        setIsResumeModalOpen(false);
+        router.push("/dashboard");
+    };
+
+    useEffect(() => {
+        if (resumeStatus !== "generating") return;
+        let active = true;
+        let timeout: ReturnType<typeof setTimeout> | null = null;
+
+        const schedule = () => {
+            const delay = 1500 + Math.random() * 1800; // 1.5s - 3.3s
+            timeout = setTimeout(() => {
+                if (!active) return;
+                setStatusIndex((prev) => (prev + 1) % statusPhrases.length);
+                schedule();
+            }, delay);
+        };
+
+        schedule();
+
+        return () => {
+            active = false;
+            if (timeout) clearTimeout(timeout);
+        };
+    }, [resumeStatus, statusPhrases.length]);
+
     return (
         <div className="flex flex-col h-full">
             {/* Header with Tabs and View Toggle */}
             <div className="flex items-center justify-between gap-4 mb-6">
                 <div className="flex items-center gap-3">
-                    <FilterTabs 
-                        activeTab={activeTab} 
-                        onTabChange={setActiveTab} 
-                        traits={traits}
-                    />
+                <FilterTabs 
+                    activeTab={activeTab} 
+                    onTabChange={setActiveTab} 
+                    traits={traits}
+                />
                     {filteredTraits.length > 0 && (
-                        <Button size="sm" className="shadow-sm">
+                        <Button size="sm" className="shadow-sm" onClick={handleGenerateResume}>
                             Создать резюме
                         </Button>
                     )}
@@ -579,6 +691,79 @@ function TraitsPanel() {
                 onOpenChange={setSheetOpen}
                 allTraits={traits}
             />
+
+            <AnimatePresence>
+                {isResumeModalOpen && (
+                    <motion.div
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.98, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.98, opacity: 0 }}
+                            className="relative w-full max-w-xl bg-card border border-border rounded-2xl shadow-2xl p-6"
+                        >
+                            <div className="flex items-start justify-end gap-3 mb-2">
+                                <button
+                                    onClick={handleCloseModal}
+                                    className="text-muted-foreground hover:text-foreground transition-colors"
+                                    aria-label="Закрыть"
+                                >
+                                    <X size={18} />
+                                </button>
+                            </div>
+
+                            {resumeStatus === "generating" && (
+                                <div className="space-y-6">
+                                    <div className="flex flex-col items-center gap-5 py-6">
+                                        <div className="animate-spin rounded-full border-4 border-border border-t-primary w-24 h-24" />
+                                        <div className="text-base font-semibold text-foreground text-center">
+                                            {statusPhrases[statusIndex]}
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-end">
+                                        <Button variant="outline" onClick={handleCancel}>
+                                            Отменить
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {resumeStatus === "success" && null}
+
+                            {resumeStatus === "error" && (
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-2 text-destructive">
+                                        <AlertCircle size={18} />
+                                        <span className="text-foreground">Не удалось создать резюме</span>
+                                    </div>
+                                    <p className="text-sm text-muted-foreground">
+                                        {errorMessage || "Попробуйте ещё раз."}
+                                    </p>
+                                    <div className="flex justify-end gap-2">
+                                        <Button variant="outline" onClick={handleCloseModal}>
+                                            Закрыть
+                                        </Button>
+                                        <Button onClick={handleGenerateResume}>Повторить</Button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {resumeStatus === "idle" && (
+                                <div className="flex justify-end gap-2">
+                                    <Button variant="outline" onClick={handleCloseModal}>
+                                        Закрыть
+                                    </Button>
+                                    <Button onClick={handleGenerateResume}>Сгенерировать</Button>
+                                </div>
+                            )}
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }
