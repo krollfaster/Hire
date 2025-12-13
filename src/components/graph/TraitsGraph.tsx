@@ -26,6 +26,9 @@ const categoryColors: Record<TraitCategory, string> = {
     impact: "#22c55e",      // green-500
     domain: "#a855f7",      // purple-500
     superpower: "#f59e0b",  // amber-500
+    process: "#06b6d4",     // cyan-500
+    background: "#ec4899",  // pink-500
+    culture: "#f97316",     // orange-500
 };
 
 export function TraitsGraph({ traits }: TraitsGraphProps) {
@@ -310,10 +313,13 @@ export function TraitsGraph({ traits }: TraitsGraphProps) {
                             style={{ backgroundColor: color }}
                         />
                         <span className="text-muted-foreground">
-                            {category === "hard_skills" && "Навыки"}
-                            {category === "impact" && "Результаты"}
+                            {category === "hard_skills" && "Технологии"}
+                            {category === "impact" && "Достижения"}
                             {category === "domain" && "Сферы"}
                             {category === "superpower" && "Суперсила"}
+                            {category === "process" && "Методологии"}
+                            {category === "background" && "Бэкграунд"}
+                            {category === "culture" && "Культура"}
                         </span>
                     </div>
                 ))}

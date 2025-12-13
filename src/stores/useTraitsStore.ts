@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 
 // Types
-export type TraitCategory = "hard_skills" | "impact" | "domain" | "superpower";
+export type TraitCategory = "hard_skills" | "impact" | "domain" | "superpower" | "process" | "background" | "culture";
 
 export interface TraitRelation {
     targetId: string;

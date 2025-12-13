@@ -345,7 +345,7 @@ export const ChatPanel = () => {
 
     return (
         <>
-            <div className="flex flex-col bg-background border-border border-r w-[400px] h-full">
+            <div className="flex flex-col bg-background border-border border-r w-[425px] h-full">
                 {/* Header */}
                 <div className="flex items-center justify-between px-5 border-border border-b h-[54px]">
                     <h2 className="font-bold text-foreground">Опишите ваши достижения</h2>

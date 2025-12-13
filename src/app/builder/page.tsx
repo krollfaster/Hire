@@ -18,6 +18,13 @@ import {
     SheetTitle,
     SheetDescription,
 } from "@/components/ui/sheet";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -28,10 +35,13 @@ type ViewMode = "cards" | "graph";
 
 const tabs: { id: FilterTab; label: string }[] = [
     { id: "all", label: "Все" },
-    { id: "hard_skills", label: "Навыки" },
-    { id: "impact", label: "Результаты" },
-    { id: "superpower", label: "Суперсила" },
+    { id: "hard_skills", label: "Технологии" },
     { id: "domain", label: "Сферы" },
+    { id: "process", label: "Методологии" },
+    { id: "impact", label: "Достижения" },
+    { id: "background", label: "Бэкграунд" },
+    { id: "culture", label: "Культура" },
+    { id: "superpower", label: "Суперсила" },
 ];
 
 const categoryConfig: Record<TraitCategory, { 
@@ -45,7 +55,7 @@ const categoryConfig: Record<TraitCategory, {
     titleHoverColor: string;
 }> = {
     hard_skills: { 
-        label: "Навык", 
+        label: "Технология", 
         color: "text-blue-500",
         bgColor: "bg-blue-500/10",
         borderColor: "border-blue-500/30",
@@ -55,7 +65,7 @@ const categoryConfig: Record<TraitCategory, {
         titleHoverColor: "group-hover:text-blue-500",
     },
     impact: { 
-        label: "Результат", 
+        label: "Достижение", 
         color: "text-green-500",
         bgColor: "bg-green-500/10",
         borderColor: "border-green-500/30",
@@ -83,6 +93,36 @@ const categoryConfig: Record<TraitCategory, {
         hoverBorder: "hover:border-amber-500/30",
         badgeHoverColor: "group-hover:text-amber-500 group-hover:border-amber-500/50",
         titleHoverColor: "group-hover:text-amber-500",
+    },
+    process: { 
+        label: "Методология", 
+        color: "text-cyan-500",
+        bgColor: "bg-cyan-500/10",
+        borderColor: "border-cyan-500/30",
+        hoverBg: "hover:bg-cyan-500/5",
+        hoverBorder: "hover:border-cyan-500/30",
+        badgeHoverColor: "group-hover:text-cyan-500 group-hover:border-cyan-500/50",
+        titleHoverColor: "group-hover:text-cyan-500",
+    },
+    background: { 
+        label: "Бэкграунд", 
+        color: "text-pink-500",
+        bgColor: "bg-pink-500/10",
+        borderColor: "border-pink-500/30",
+        hoverBg: "hover:bg-pink-500/5",
+        hoverBorder: "hover:border-pink-500/30",
+        badgeHoverColor: "group-hover:text-pink-500 group-hover:border-pink-500/50",
+        titleHoverColor: "group-hover:text-pink-500",
+    },
+    culture: { 
+        label: "Культура", 
+        color: "text-orange-500",
+        bgColor: "bg-orange-500/10",
+        borderColor: "border-orange-500/30",
+        hoverBg: "hover:bg-orange-500/5",
+        hoverBorder: "hover:border-orange-500/30",
+        badgeHoverColor: "group-hover:text-orange-500 group-hover:border-orange-500/50",
+        titleHoverColor: "group-hover:text-orange-500",
     },
 };
 
@@ -158,6 +198,9 @@ function TraitCard({ trait, onClick, onHover, isHighlighted }: TraitCardProps) {
                         trait.category === "impact" && "bg-green-500/5 border-green-500/30",
                         trait.category === "domain" && "bg-purple-500/5 border-purple-500/30",
                         trait.category === "superpower" && "bg-amber-500/5 border-amber-500/30",
+                        trait.category === "process" && "bg-cyan-500/5 border-cyan-500/30",
+                        trait.category === "background" && "bg-pink-500/5 border-pink-500/30",
+                        trait.category === "culture" && "bg-orange-500/5 border-orange-500/30",
                     ]
                 )}
             >
@@ -380,7 +423,10 @@ function TraitDetailSheet({
                                             trait.category === "hard_skills" && "bg-blue-500",
                                             trait.category === "impact" && "bg-green-500",
                                             trait.category === "domain" && "bg-purple-500",
-                                            trait.category === "superpower" && "bg-amber-500"
+                                            trait.category === "superpower" && "bg-amber-500",
+                                            trait.category === "process" && "bg-cyan-500",
+                                            trait.category === "background" && "bg-pink-500",
+                                            trait.category === "culture" && "bg-orange-500"
                                         )}
                                         style={{ width: `${(trait.importance / 5) * 100}%` }}
                                     />
@@ -449,13 +495,13 @@ function TraitDetailSheet({
     );
 }
 
-// Custom TabsList without Radix context dependency
-function FilterTabs({ 
-    activeTab, 
-    onTabChange, 
-    traits 
-}: { 
-    activeTab: FilterTab; 
+// Custom Select component for filtering
+function FilterSelect({
+    activeTab,
+    onTabChange,
+    traits
+}: {
+    activeTab: FilterTab;
     onTabChange: (tab: FilterTab) => void;
     traits: Trait[];
 }) {
@@ -464,33 +510,38 @@ function FilterTabs({
         return traits.filter(t => t.category === tabId).length;
     };
 
+    const activeTabData = tabs.find(tab => tab.id === activeTab);
+
     return (
-        <div className="inline-flex h-10 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground">
-            {tabs.map((tab) => {
-                const count = getCount(tab.id);
-                const isActive = activeTab === tab.id;
-                
-                return (
-                    <button
-                        key={tab.id}
-                        onClick={() => onTabChange(tab.id)}
-                        className={cn(
-                            "inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 gap-2",
-                            isActive 
-                                ? "bg-primary/10 text-primary shadow-sm" 
-                                : "hover:bg-muted hover:text-foreground"
-                        )}
-                    >
-                        {tab.label}
-                        {count > 0 && (
-                            <Badge variant="secondary" className="px-1.5 py-0 text-xs h-5 min-w-5">
-                                {count}
-                            </Badge>
-                        )}
-                    </button>
-                );
-            })}
-        </div>
+        <Select value={activeTab} onValueChange={(value) => onTabChange(value as FilterTab)}>
+            <SelectTrigger className="w-[180px]">
+                <SelectValue>
+                    <div className="flex items-center gap-2">
+                        {activeTabData?.label}
+                        <Badge variant="secondary" className="px-1.5 py-0 text-xs h-5 min-w-5">
+                            {getCount(activeTab)}
+                        </Badge>
+                    </div>
+                </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+                {tabs.map((tab) => {
+                    const count = getCount(tab.id);
+                    return (
+                        <SelectItem key={tab.id} value={tab.id}>
+                            <div className="flex items-center justify-between w-full gap-2">
+                                <span>{tab.label}</span>
+                                {count > 0 && (
+                                    <Badge variant="secondary" className="px-1.5 py-0 text-xs h-5 min-w-5">
+                                        {count}
+                                    </Badge>
+                                )}
+                            </div>
+                        </SelectItem>
+                    );
+                })}
+            </SelectContent>
+        </Select>
     );
 }
 
@@ -629,9 +680,9 @@ function TraitsPanel() {
             {/* Header with Tabs and View Toggle */}
             <div className="flex items-center justify-between gap-4 mb-6">
                 <div className="flex items-center gap-3">
-                <FilterTabs 
-                    activeTab={activeTab} 
-                    onTabChange={setActiveTab} 
+                <FilterSelect
+                    activeTab={activeTab}
+                    onTabChange={setActiveTab}
                     traits={traits}
                 />
                     {filteredTraits.length > 0 && (

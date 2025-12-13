@@ -1,0 +1,2 @@
+export { PersonalInfoPanel } from './PersonalInfoPanel';
+

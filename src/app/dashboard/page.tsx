@@ -1,6 +1,7 @@
 "use client";
 
 import { AppShell } from "@/components/layout";
+import { PersonalInfoPanel } from "@/components/dashboard";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -23,17 +24,17 @@ export default function DashboardPage() {
 
     return (
         <AppShell>
-            <div className="flex flex-col w-full h-full p-0 gap-6 max-w-6xl min-h-0" style={{ paddingTop: '0px', paddingBottom: '0px', paddingLeft: '0px', paddingRight: '0px' }}>
+            <div className="flex flex-col w-full h-full p-0 gap-6 min-h-0" style={{ paddingTop: '0px', paddingBottom: '0px', paddingLeft: '0px', paddingRight: '0px' }}>
                 <div className="flex-1 min-h-0">
-                    <div className="flex h-full rounded-2xl bg-card/60 overflow-hidden divide-x divide-border">
-                        {/* Дополнительная секция - всегда отображается */}
-                        <div className="w-[400px] min-w-[380px] max-w-[420px] flex-shrink-0 p-6 overflow-y-auto">
-                            <div className="text-sm text-muted-foreground">Дополнительная секция</div>
+                    <div className="flex h-full w-full min-w-0 rounded-2xl bg-card/60 overflow-hidden divide-x divide-border">
+                        {/* Личные данные */}
+                        <div className="w-[425px] min-w-[380px] max-w-[425px] flex-shrink-0 p-6 pr-2 overflow-hidden">
+                            <PersonalInfoPanel />
                         </div>
 
                         {/* Секция резюме */}
-                        <ScrollArea className="relative flex-1 h-full p-6 overflow-hidden">
-                            <div className="relative flex flex-col gap-4 h-full">
+                        <ScrollArea className="relative flex-1 min-w-0 h-full p-6 overflow-hidden">
+                            <div className="relative flex flex-col gap-4 min-h-full">
                                 {showConfetti && (
                                     <div className="pointer-events-none absolute inset-0 overflow-hidden">
                                         {Array.from({ length: 80 }).map((_, i) => {
@@ -96,20 +97,22 @@ export default function DashboardPage() {
 
                                 {/* Если резюме не создано - показываем empty state */}
                                 {!resumeText || resumes.length === 0 ? (
-                                    <div className="flex flex-col justify-center items-center text-center px-6 py-12 w-full max-w-xl mx-auto" style={{ height: '100%' }}>
-                                        <div className="w-20 h-20 rounded-2xl bg-muted flex items-center justify-center mb-4">
-                                            <Link2 className="w-10 h-10 text-muted-foreground" strokeWidth={1.5} />
+                                    <div className="flex flex-1 items-center justify-center">
+                                        <div className="flex flex-col items-center text-center px-6 py-12 w-full max-w-xl mx-auto">
+                                            <div className="w-20 h-20 rounded-2xl bg-muted flex items-center justify-center mb-4">
+                                                <Link2 className="w-10 h-10 text-muted-foreground" strokeWidth={1.5} />
+                                            </div>
+
+                                            <h3 className="text-lg font-semibold text-foreground mb-2">Резюме не создано</h3>
+                                            <p className="text-muted-foreground text-sm max-w-md mb-4">
+                                                Создайте резюме в разделе «Написать», чтобы оно появилось здесь. Можно добавить
+                                                навыки и достижения через чат.
+                                            </p>
+
+                                            <Button asChild>
+                                                <Link href="/builder">Создать резюме</Link>
+                                            </Button>
                                         </div>
-
-                                        <h3 className="text-lg font-semibold text-foreground mb-2">Резюме не создано</h3>
-                                        <p className="text-muted-foreground text-sm max-w-md mb-4">
-                                            Создайте резюме в разделе «Написать», чтобы оно появилось здесь. Можно добавить
-                                            навыки и достижения через чат.
-                                        </p>
-
-                                        <Button asChild>
-                                            <Link href="/builder">Создать резюме</Link>
-                                        </Button>
                                     </div>
                                 ) : (
                                     /* Если резюме создано - показываем селектор и текст */

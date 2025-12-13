@@ -131,6 +131,15 @@
 /* ===== CUSTOM UTILITIES ===== */
 @layer utilities {
 
+  /* Ensure scroll area viewport and its content stretch to full height */
+  [data-slot="scroll-area-viewport"] > div {
+    height: 100%;
+  }
+
+  [data-slot="scroll-area-viewport"] > div > div.relative {
+    height: 100%;
+  }
+
   /* Glow effect for accent elements */
   .glow-primary {
     box-shadow: 0 0 20px oklch(0.65 0.25 270 / 40%),
