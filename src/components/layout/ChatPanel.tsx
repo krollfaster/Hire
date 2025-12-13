@@ -272,7 +272,6 @@ export const ChatPanel = () => {
     useEffect(() => {
         setChatContext({
             messages: messages.map((m) => ({ role: m.role, content: m.content })),
-            workplace: null,
         });
     }, [messages, setChatContext]);
 
