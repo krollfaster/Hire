@@ -7,12 +7,40 @@ export interface Skill {
     category: 'design' | 'engineering' | 'leadership' | 'communication' | 'domain';
 }
 
+export interface WorkExperience {
+    id: string;
+    company: string;
+    position: string;
+    startDate: string;
+    endDate: string | null; // null = текущая работа
+}
+
+export interface Education {
+    id: string;
+    institution: string;
+    degree: string;
+    field: string;
+    year: string;
+}
+
+export interface Contacts {
+    email: string;
+    phone: string;
+    linkedin: string;
+    telegram: string;
+}
+
 export interface User {
     id: string;
     name: string;
     role: string;
     avatar: string;
     bio: string;
+    contacts: Contacts;
+    location: string;
+    relocatable: boolean;
+    workHistory: WorkExperience[];
+    education: Education[];
     semanticProfile: Skill[];
     stats: {
         searchAppearances: number[];
@@ -67,12 +95,85 @@ export interface Candidate {
 
 // ===== MOCK DATA =====
 
+// Пустой пользователь для начала заполнения профиля
+export const emptyUser: User = {
+    id: '1',
+    name: '',
+    role: '',
+    avatar: '',
+    bio: '',
+    contacts: {
+        email: '',
+        phone: '',
+        linkedin: '',
+        telegram: '',
+    },
+    location: '',
+    relocatable: false,
+    workHistory: [],
+    education: [],
+    semanticProfile: [],
+    stats: {
+        searchAppearances: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        profileViews: 0,
+        vibeMatchScore: 0,
+    },
+    recentActivity: [],
+};
+
 export const mockUser: User = {
     id: '1',
     name: 'Алексей Петров',
     role: 'Senior Product Designer',
     avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
     bio: 'Дизайн-лидер с 8+ годами опыта создания пользовательских интерфейсов для B2B SaaS продуктов. Ранее в Figma, сейчас строю будущее дизайн-инструментов.',
+    contacts: {
+        email: 'alexey.petrov@email.com',
+        phone: '+7 (999) 123-45-67',
+        linkedin: 'linkedin.com/in/alexeypetrov',
+        telegram: '@alexey_petrov',
+    },
+    location: 'Москва, Россия',
+    relocatable: true,
+    workHistory: [
+        {
+            id: 'w1',
+            company: 'Figma',
+            position: 'Senior Product Designer',
+            startDate: '2021-03',
+            endDate: null,
+        },
+        {
+            id: 'w2',
+            company: 'Яндекс',
+            position: 'Product Designer',
+            startDate: '2018-06',
+            endDate: '2021-02',
+        },
+        {
+            id: 'w3',
+            company: 'Mail.ru Group',
+            position: 'UI Designer',
+            startDate: '2016-01',
+            endDate: '2018-05',
+        },
+    ],
+    education: [
+        {
+            id: 'e1',
+            institution: 'МГУ им. М.В. Ломоносова',
+            degree: 'Магистр',
+            field: 'Прикладная математика и информатика',
+            year: '2016',
+        },
+        {
+            id: 'e2',
+            institution: 'Школа дизайна ВШЭ',
+            degree: 'Сертификат',
+            field: 'UX/UI Дизайн',
+            year: '2017',
+        },
+    ],
     semanticProfile: [
         { id: '1', name: 'UI Дизайн', weight: 0.95, category: 'design' },
         { id: '2', name: 'Дизайн-системы', weight: 0.92, category: 'design' },
