@@ -15,8 +15,8 @@ interface ChatListProps {
 export const ChatList = ({ conversations, activeId, onSelect }: ChatListProps) => {
     return (
         <div className="flex flex-col h-full border-r border-border w-full">
-            <div className="p-4 border-b border-border">
-                <h2 className="text-lg font-semibold text-foreground">Сообщения</h2>
+            <div className="p-4 py-3 border-b border-border">
+                <h2 className="text-lg ml-1 font-semibold text-foreground">Сообщения</h2>
             </div>
             <ScrollArea className="flex-1 w-full h-full">
                 <div className="flex flex-col w-[425px]">

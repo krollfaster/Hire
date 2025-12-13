@@ -3,11 +3,15 @@
 import { motion, useScroll, useTransform } from "framer-motion";
 import Link from "next/link";
 import { useRef } from "react";
+import { useRouter } from "next/navigation";
 import { ArrowRight, Sparkles, Brain, Search, Users, Zap, CheckCircle, MessageSquare, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useRoleStore } from "@/stores/useRoleStore";
 
 export default function LandingPage() {
   const pageRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+  const { setRole } = useRoleStore();
   const { scrollYProgress } = useScroll({
     target: pageRef,
     offset: ["start start", "end start"],
@@ -16,6 +20,16 @@ export default function LandingPage() {
   const bgParallax = useTransform(scrollYProgress, [0, 1], [0, -140]);
   const gridParallax = useTransform(scrollYProgress, [0, 1], [0, -70]);
   const glowParallax = useTransform(scrollYProgress, [0, 1], [0, -200]);
+
+  const handleRecruiterDemo = () => {
+    setRole('recruiter');
+    router.push('/search');
+  };
+
+  const handleCandidateJoin = () => {
+    setRole('candidate');
+    router.push('/builder');
+  };
 
   return (
     <div ref={pageRef} className="relative bg-background min-h-screen overflow-hidden">
@@ -92,17 +106,13 @@ export default function LandingPage() {
           transition={{ duration: 0.5, delay: 0.3 }}
           className="flex sm:flex-row flex-col gap-4"
         >
-          <Link href="/builder">
-            <Button size="lg" className="gap-2 px-8 glow-primary">
-              Присоединиться
-              <ArrowRight size={18} />
-            </Button>
-          </Link>
-          <Link href="/search">
-            <Button size="lg" variant="outline" className="gap-2 px-8">
-              Демо для рекрутеров
-            </Button>
-          </Link>
+          <Button size="lg" className="gap-2 px-8 glow-primary" onClick={handleCandidateJoin}>
+            Присоединиться
+            <ArrowRight size={18} />
+          </Button>
+          <Button size="lg" variant="outline" className="gap-2 px-8" onClick={handleRecruiterDemo}>
+            Демо для рекрутеров
+          </Button>
         </motion.div>
 
         {/* Stats */}
@@ -299,7 +309,7 @@ export default function LandingPage() {
                   ))}
                 </div>
                 <blockquote className="text-foreground mb-6 italic">
-                  "{testimonial.quote}"
+                  &quot;{testimonial.quote}&quot;
                 </blockquote>
                 <div>
                   <p className="font-semibold text-foreground">{testimonial.author}</p>
@@ -383,18 +393,14 @@ export default function LandingPage() {
             </p>
 
             <div className="flex sm:flex-row flex-col gap-4 justify-center">
-              <Link href="/builder">
-                <Button size="lg" className="gap-2 px-8 glow-primary">
-                  Создать профиль
-                  <ArrowRight size={18} />
-                </Button>
-              </Link>
-              <Link href="/search">
-                <Button size="lg" variant="outline" className="gap-2 px-8">
-                  Для рекрутеров
-                  <Users size={18} />
-                </Button>
-              </Link>
+              <Button size="lg" className="gap-2 px-8 glow-primary" onClick={handleCandidateJoin}>
+                Создать профиль
+                <ArrowRight size={18} />
+              </Button>
+              <Button size="lg" variant="outline" className="gap-2 px-8" onClick={handleRecruiterDemo}>
+                Для рекрутеров
+                <Users size={18} />
+              </Button>
             </div>
           </motion.div>
         </div>
@@ -414,12 +420,12 @@ export default function LandingPage() {
                 Поиск по смыслу, а не по ключевым словам.
               </p>
               <div className="flex gap-4">
-                <Link href="/builder" className="text-muted-foreground hover:text-primary transition-colors">
+                <button onClick={handleCandidateJoin} className="text-muted-foreground hover:text-primary transition-colors">
                   Создать профиль
-                </Link>
-                <Link href="/search" className="text-muted-foreground hover:text-primary transition-colors">
+                </button>
+                <button onClick={handleRecruiterDemo} className="text-muted-foreground hover:text-primary transition-colors">
                   Для компаний
-                </Link>
+                </button>
               </div>
             </div>
 

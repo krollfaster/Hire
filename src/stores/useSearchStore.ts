@@ -1,55 +1,54 @@
 import { create } from 'zustand';
-import { Candidate, mockCandidates } from '@/data/mock';
+import type { GeneratedCandidate } from '@/app/api/search/route';
 
 interface SearchState {
     query: string;
-    results: Candidate[];
+    results: GeneratedCandidate[];
     isSearching: boolean;
+    error: string | null;
 
     setQuery: (query: string) => void;
     search: (query: string) => Promise<void>;
     clearResults: () => void;
 }
 
-// Simple keyword matching for demo
-const matchCandidates = (query: string, candidates: Candidate[]): Candidate[] => {
-    const queryLower = query.toLowerCase();
-    const keywords = queryLower.split(/\s+/).filter(Boolean);
-
-    return candidates
-        .map((candidate) => {
-            let score = candidate.matchScore;
-
-            // Boost score based on keyword matches
-            keywords.forEach((keyword) => {
-                if (candidate.role.toLowerCase().includes(keyword)) score += 5;
-                if (candidate.bio.toLowerCase().includes(keyword)) score += 3;
-                candidate.semanticProfile.forEach((skill) => {
-                    if (skill.name.toLowerCase().includes(keyword)) score += 4;
-                });
-            });
-
-            return { ...candidate, matchScore: Math.min(score, 99) };
-        })
-        .sort((a, b) => b.matchScore - a.matchScore);
-};
-
 export const useSearchStore = create<SearchState>((set) => ({
     query: '',
     results: [],
     isSearching: false,
+    error: null,
 
     setQuery: (query) => set({ query }),
 
     search: async (query) => {
-        set({ isSearching: true, query });
+        set({ isSearching: true, query, error: null });
 
-        // Simulate AI processing delay
-        await new Promise((resolve) => setTimeout(resolve, 1200));
+        try {
+            const response = await fetch('/api/search', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ query }),
+            });
 
-        const results = matchCandidates(query, mockCandidates);
-        set({ results, isSearching: false });
+            const data = await response.json();
+
+            if (data.error) {
+                set({ error: data.error, results: [], isSearching: false });
+                return;
+            }
+
+            set({ results: data.candidates || [], isSearching: false });
+        } catch (error) {
+            console.error('Search error:', error);
+            set({
+                error: 'Произошла ошибка при поиске. Попробуйте ещё раз.',
+                results: [],
+                isSearching: false,
+            });
+        }
     },
 
-    clearResults: () => set({ results: [], query: '' }),
+    clearResults: () => set({ results: [], query: '', error: null }),
 }));

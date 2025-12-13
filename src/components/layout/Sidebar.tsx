@@ -8,9 +8,10 @@ import {
     PenLine,
     MessageCircle,
     Settings,
-    Sparkles,
+    Search,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useRoleStore } from "@/stores/useRoleStore";
 
 interface NavItem {
     href: string;
@@ -19,14 +20,22 @@ interface NavItem {
     disabled?: boolean;
 }
 
-const navItems: NavItem[] = [
+const candidateNavItems: NavItem[] = [
     { href: "/builder", label: "Написать", icon: <PenLine size={20} /> },
     { href: "/messages", label: "Чат", icon: <MessageCircle size={20} /> },
     { href: "/dashboard", label: "Резюме", icon: <FileUser size={20} /> },
 ];
 
+const recruiterNavItems: NavItem[] = [
+    { href: "/search", label: "Поиск", icon: <Search size={20} /> },
+    { href: "/messages", label: "Чат", icon: <MessageCircle size={20} /> },
+];
+
 export const Sidebar = () => {
     const pathname = usePathname();
+    const { role } = useRoleStore();
+
+    const navItems = role === 'recruiter' ? recruiterNavItems : candidateNavItems;
 
     return (
         <aside

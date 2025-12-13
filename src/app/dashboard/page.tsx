@@ -5,6 +5,7 @@ import { PersonalInfoPanel } from "@/components/dashboard";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MarkdownText } from "@/components/ui/markdown-text";
 import { useResumeStore } from "@/stores/useResumeStore";
 import Link from "next/link";
 import { Link2 } from "lucide-react";
@@ -135,9 +136,7 @@ export default function DashboardPage() {
                                             </Select>
                                         </div>
 
-                                        <pre className="whitespace-pre-wrap text-[15px] leading-relaxed text-foreground">
-                                            {resumeText}
-                                        </pre>
+                                        <MarkdownText content={resumeText} />
                                     </>
                                 )}
                             </div>
