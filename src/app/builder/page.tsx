@@ -265,7 +265,7 @@ function TraitCard({ trait, onClick, onHover, isHighlighted }: TraitCardProps) {
 
 function EmptyState({ message, showIcon = true }: { message?: string; showIcon?: boolean }) {
     return (
-        <div className="flex flex-col items-center justify-center flex-1 text-center px-8 py-16">
+        <div className="flex flex-col items-center justify-center flex-1 text-center px-8 py-16 h-full w-full">
             {showIcon && (
                 <div className="w-20 h-20 rounded-2xl bg-muted flex items-center justify-center mb-4">
                     <svg
