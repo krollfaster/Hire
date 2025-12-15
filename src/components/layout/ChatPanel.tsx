@@ -20,13 +20,13 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useTraitsStore, TraitAction } from "@/stores/useTraitsStore";
-import { useResumeStore } from "@/stores/useResumeStore";
 import { useChatStore } from "@/stores/useChatStore";
+import { useProfessionStore } from "@/stores/useProfessionStore";
 import {
     ButtonGroup,
     ButtonGroupSeparator,
     ButtonGroupText,
-  } from "@/components/ui/button-group";
+} from "@/components/ui/button-group";
 
 
 type ModelOption = {
@@ -58,15 +58,15 @@ const MODEL_OPTIONS: ModelOption[] = [
     },
     {
         id: "openai/gpt-4.1",
-        label: "GPT-4.1",
+        label: "GPT-5.2",
         provider: "OpenAI",
         icon: Sparkles,
         isPremium: true,
     },
     {
         id: "meta-llama/llama-3.3-70b-instruct",
-        label: "Llama 3.3 70B",
-        provider: "Llama",
+        label: "Gemini Pro 3",
+        provider: "Google",
         icon: Brain,
         isPremium: true,
     },
@@ -141,25 +141,25 @@ const WorkplaceModal = ({
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+                    className="z-50 fixed inset-0 flex justify-center items-center bg-black/50 backdrop-blur-sm"
                     onClick={onClose}
                 >
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                        className="bg-card border border-border rounded-2xl p-6 w-[400px] shadow-xl"
+                        className="bg-card shadow-xl p-6 border border-border rounded-2xl w-[400px]"
                         onClick={(e) => e.stopPropagation()}
                     >
-                        <div className="flex items-center justify-between mb-6">
-                            <h3 className="text-lg font-bold text-foreground">
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="font-bold text-foreground text-lg">
                                 {workplace ? "Редактировать место работы" : "Новое место работы"}
                             </h3>
                             <div className="flex items-center gap-1">
                                 {workplace && onDelete && (
                                     <button
                                         onClick={handleDelete}
-                                        className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                                        className="hover:bg-destructive/10 p-1.5 rounded-lg text-muted-foreground hover:text-destructive transition-colors"
                                         title="Удалить"
                                     >
                                         <Trash2 size={18} />
@@ -167,7 +167,7 @@ const WorkplaceModal = ({
                                 )}
                                 <button
                                     onClick={onClose}
-                                    className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                                    className="hover:bg-muted p-1.5 rounded-lg text-muted-foreground hover:text-foreground transition-colors"
                                 >
                                     <X size={18} />
                                 </button>
@@ -176,7 +176,7 @@ const WorkplaceModal = ({
 
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-foreground mb-1.5">
+                                <label className="block mb-1.5 font-medium text-foreground text-sm">
                                     Название компании *
                                 </label>
                                 <input
@@ -184,13 +184,13 @@ const WorkplaceModal = ({
                                     value={companyName}
                                     onChange={(e) => setCompanyName(e.target.value)}
                                     placeholder="Например: Google"
-                                    className="w-full px-4 py-3 bg-background border border-border rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 transition-colors"
+                                    className="bg-background px-4 py-3 border border-border focus:border-primary/50 rounded-xl focus:outline-none w-full text-foreground placeholder:text-muted-foreground transition-colors"
                                     required
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-foreground mb-1.5">
+                                <label className="block mb-1.5 font-medium text-foreground text-sm">
                                     Должность *
                                 </label>
                                 <input
@@ -198,14 +198,14 @@ const WorkplaceModal = ({
                                     value={position}
                                     onChange={(e) => setPosition(e.target.value)}
                                     placeholder="Например: Senior Developer"
-                                    className="w-full px-4 py-3 bg-background border border-border rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 transition-colors"
+                                    className="bg-background px-4 py-3 border border-border focus:border-primary/50 rounded-xl focus:outline-none w-full text-foreground placeholder:text-muted-foreground transition-colors"
                                     required
                                 />
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="gap-3 grid grid-cols-2">
                                 <div>
-                                    <label className="block text-sm font-medium text-foreground mb-1.5">
+                                    <label className="block mb-1.5 font-medium text-foreground text-sm">
                                         Начало работы
                                     </label>
                                     <input
@@ -213,11 +213,11 @@ const WorkplaceModal = ({
                                         value={startDate}
                                         onChange={(e) => setStartDate(e.target.value)}
                                         placeholder="Янв 2020"
-                                        className="w-full px-4 py-3 bg-background border border-border rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 transition-colors"
+                                        className="bg-background px-4 py-3 border border-border focus:border-primary/50 rounded-xl focus:outline-none w-full text-foreground placeholder:text-muted-foreground transition-colors"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-foreground mb-1.5">
+                                    <label className="block mb-1.5 font-medium text-foreground text-sm">
                                         Конец работы
                                     </label>
                                     <input
@@ -225,7 +225,7 @@ const WorkplaceModal = ({
                                         value={endDate}
                                         onChange={(e) => setEndDate(e.target.value)}
                                         placeholder="Настоящее время"
-                                        className="w-full px-4 py-3 bg-background border border-border rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 transition-colors"
+                                        className="bg-background px-4 py-3 border border-border focus:border-primary/50 rounded-xl focus:outline-none w-full text-foreground placeholder:text-muted-foreground transition-colors"
                                     />
                                 </div>
                             </div>
@@ -234,13 +234,13 @@ const WorkplaceModal = ({
                                 <button
                                     type="button"
                                     onClick={onClose}
-                                    className="flex-1 px-4 py-3 rounded-xl border border-border text-foreground hover:bg-muted transition-colors"
+                                    className="flex-1 hover:bg-muted px-4 py-3 border border-border rounded-xl text-foreground transition-colors"
                                 >
                                     Отмена
                                 </button>
                                 <button
                                     type="submit"
-                                    className="flex-1 px-4 py-3 rounded-xl bg-primary text-primary-foreground hover:opacity-90 transition-opacity font-medium"
+                                    className="flex-1 bg-primary hover:opacity-90 px-4 py-3 rounded-xl font-medium text-primary-foreground transition-opacity"
                                 >
                                     {workplace ? "Сохранить" : "Создать"}
                                 </button>
@@ -265,7 +265,9 @@ export const ChatPanel = () => {
 
     // Connect to traits store
     const { applyActions, getContextForAI } = useTraitsStore();
-    const { setChatContext } = useResumeStore();
+
+    // Get active profession for context
+    const { activeProfession, setSetupModalOpen } = useProfessionStore();
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -275,11 +277,11 @@ export const ChatPanel = () => {
         scrollToBottom();
     }, [messages]);
 
-    useEffect(() => {
-        setChatContext({
-            messages: messages.map((m) => ({ role: m.role, content: m.content })),
-        });
-    }, [messages, setChatContext]);
+    const handleInputClick = () => {
+        if (!activeProfession) {
+            setSetupModalOpen(true);
+        }
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -301,6 +303,12 @@ export const ChatPanel = () => {
             // Get current traits context for AI
             const traitsContext = getContextForAI();
 
+            // Prepare profession context
+            const professionContext = activeProfession ? {
+                name: activeProfession.name,
+                grade: activeProfession.grade,
+            } : null;
+
             const response = await fetch("/api/chat", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -308,6 +316,7 @@ export const ChatPanel = () => {
                     messages: newMessages.map(m => ({ role: m.role, content: m.content })),
                     model: selectedModel,
                     traitsContext,
+                    professionContext,
                 }),
             });
 
@@ -351,16 +360,13 @@ export const ChatPanel = () => {
 
     return (
         <>
-            <div className="flex flex-col border-border border-r w-[425px] h-full">
-                {/* Header */}
-                <div className="flex items-center justify-between px-5 border-border border-b h-[64px]">
-                    <h2 className="text-lg font-semibold text-foreground">Опишите ваши достижения</h2>
-                </div>
+            <div className="flex flex-col bg-sidebar pt-5 border-border border-l w-[400px] h-full">
+
 
                 {/* Messages / Empty State */}
                 <div className="flex-1 space-y-4 p-5 overflow-y-auto">
                     {messages.length === 0 ? (
-                        <div className="flex flex-col justify-center items-center h-full text-center px-4">
+                        <div className="flex flex-col justify-center items-center px-4 h-full text-center">
                             <p className="text-muted-foreground text-sm">
                                 Опишите свой опыт работы и достижения. ИИ поможет выделить ключевые моменты для резюме.
                             </p>
@@ -418,6 +424,7 @@ export const ChatPanel = () => {
                         <input
                             type="text"
                             value={input}
+                            onClick={handleInputClick}
                             onChange={(e) => setInput(e.target.value)}
                             placeholder="Напишите что-нибудь..."
                             className="bg-transparent px-4 py-4 focus:outline-none w-full text-foreground placeholder:text-muted-foreground text-sm"
@@ -463,7 +470,7 @@ export const ChatPanel = () => {
                                                     <span className="font-medium truncate">
                                                         {currentModel.label}
                                                     </span>
-                                                    <span className="text-muted-foreground text-[11px] truncate">
+                                                    <span className="text-[11px] text-muted-foreground truncate">
                                                         · {currentModel.provider}
                                                     </span>
                                                 </>
@@ -519,7 +526,7 @@ export const ChatPanel = () => {
                                                                 )}
                                                             />
                                                             <div className="flex-1 min-w-0">
-                                                                <div className="text-sm font-medium truncate">
+                                                                <div className="font-medium text-sm truncate">
                                                                     {model.label}
                                                                 </div>
                                                                 <div className="text-[11px] text-muted-foreground truncate">
@@ -555,7 +562,7 @@ export const ChatPanel = () => {
                             </div>
 
                             {/* Right: Send Button */}
-                            
+
                             <button
                                 type="submit"
                                 disabled={!input.trim() || isLoading}
@@ -568,9 +575,9 @@ export const ChatPanel = () => {
                             >
                                 <ArrowUp size={16} strokeWidth={2.5} />
                             </button>
-                            
+
                         </div>
-                        
+
                     </form>
                 </div>
             </div>

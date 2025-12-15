@@ -9,6 +9,7 @@ export interface ChatMessage {
 
 interface ChatState {
     messages: ChatMessage[];
+    isLoading: boolean;
     setMessages: (messages: ChatMessage[]) => void;
     addMessage: (message: ChatMessage) => void;
     reset: () => void;
@@ -16,14 +17,19 @@ interface ChatState {
 
 export const useChatStore = create<ChatState>((set) => ({
     messages: [],
+    isLoading: false,
 
-    setMessages: (messages) => set({ messages }),
+    setMessages: (messages) => {
+        set({ messages });
+    },
 
-    addMessage: (message) =>
+    addMessage: (message) => {
         set((state) => ({
             messages: [...state.messages, message],
-        })),
+        }));
+    },
 
-    reset: () => set({ messages: [] }),
+    reset: () => {
+        set({ messages: [] });
+    },
 }));
-

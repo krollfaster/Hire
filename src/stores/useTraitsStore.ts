@@ -26,6 +26,8 @@ export type TraitAction =
 interface TraitsState {
     traits: Trait[];
     previousState: Trait[] | null;
+    isLoading: boolean;
+    isSyncing: boolean;
     
     // Apply actions from AI response
     applyActions: (actions: TraitAction[]) => void;
@@ -38,11 +40,20 @@ interface TraitsState {
     
     // Get simplified context for AI (to save tokens)
     getContextForAI: () => { id: string; label: string; category: TraitCategory }[];
+    
+    // Sync with database
+    loadFromServer: () => Promise<void>;
+    saveToServer: () => Promise<void>;
 }
+
+// Debounce function for saving
+let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 
 export const useTraitsStore = create<TraitsState>((set, get) => ({
     traits: [],
     previousState: null,
+    isLoading: false,
+    isSyncing: false,
 
     applyActions: (actions) => {
         set((state) => {
@@ -80,6 +91,12 @@ export const useTraitsStore = create<TraitsState>((set, get) => ({
 
             return { traits: newTraits, previousState };
         });
+
+        // Debounced save to server
+        if (saveTimeout) clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(() => {
+            get().saveToServer();
+        }, 2000);
     },
 
     replaceAll: (traits) => {
@@ -87,6 +104,12 @@ export const useTraitsStore = create<TraitsState>((set, get) => ({
             traits,
             previousState: [...state.traits]
         }));
+
+        // Save to server
+        if (saveTimeout) clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(() => {
+            get().saveToServer();
+        }, 500);
     },
 
     undo: () => {
@@ -97,10 +120,49 @@ export const useTraitsStore = create<TraitsState>((set, get) => ({
                 previousState: null
             };
         });
+
+        // Save to server after undo
+        if (saveTimeout) clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(() => {
+            get().saveToServer();
+        }, 500);
     },
 
     getContextForAI: () => {
         const { traits } = get();
         return traits.map(({ id, label, category }) => ({ id, label, category }));
-    }
+    },
+
+    loadFromServer: async () => {
+        set({ isLoading: true });
+        try {
+            const response = await fetch("/api/sync/graph");
+            if (response.ok) {
+                const data = await response.json();
+                if (data.traits && Array.isArray(data.traits)) {
+                    set({ traits: data.traits });
+                }
+            }
+        } catch (error) {
+            console.error("Failed to load traits from server:", error);
+        } finally {
+            set({ isLoading: false });
+        }
+    },
+
+    saveToServer: async () => {
+        const { traits } = get();
+        set({ isSyncing: true });
+        try {
+            await fetch("/api/sync/graph", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ traits }),
+            });
+        } catch (error) {
+            console.error("Failed to save traits to server:", error);
+        } finally {
+            set({ isSyncing: false });
+        }
+    },
 }));
