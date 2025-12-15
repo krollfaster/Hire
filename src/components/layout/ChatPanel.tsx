@@ -22,6 +22,12 @@ import { cn } from "@/lib/utils";
 import { useTraitsStore, TraitAction } from "@/stores/useTraitsStore";
 import { useResumeStore } from "@/stores/useResumeStore";
 import { useChatStore } from "@/stores/useChatStore";
+import {
+    ButtonGroup,
+    ButtonGroupSeparator,
+    ButtonGroupText,
+  } from "@/components/ui/button-group";
+
 
 type ModelOption = {
     id: string;
@@ -345,9 +351,9 @@ export const ChatPanel = () => {
 
     return (
         <>
-            <div className="flex flex-col bg-background border-border border-r w-[425px] h-full">
+            <div className="flex flex-col border-border border-r w-[425px] h-full">
                 {/* Header */}
-                <div className="flex items-center justify-between px-5 border-border border-b h-[54px]">
+                <div className="flex items-center justify-between px-5 border-border border-b h-[64px]">
                     <h2 className="text-lg font-semibold text-foreground">Опишите ваши достижения</h2>
                 </div>
 
@@ -549,6 +555,7 @@ export const ChatPanel = () => {
                             </div>
 
                             {/* Right: Send Button */}
+                            
                             <button
                                 type="submit"
                                 disabled={!input.trim() || isLoading}
@@ -561,7 +568,9 @@ export const ChatPanel = () => {
                             >
                                 <ArrowUp size={16} strokeWidth={2.5} />
                             </button>
+                            
                         </div>
+                        
                     </form>
                 </div>
             </div>

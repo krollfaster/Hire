@@ -41,7 +41,7 @@ export const ChatWindow = ({ conversation, onSend }: ChatWindowProps) => {
     return (
         <div className="flex flex-col h-full">
             {/* Шапка */}
-            <div className="flex items-center gap-3 p-4 border-b border-border bg-card/50">
+            <div className="flex items-center gap-3 px-4 h-[64px] border-b border-border">
                 <Avatar className="h-10 w-10">
                     <AvatarImage src={recruiter.avatar} alt={recruiter.name} />
                     <AvatarFallback>

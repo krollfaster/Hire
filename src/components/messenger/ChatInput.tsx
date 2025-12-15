@@ -27,7 +27,7 @@ export const ChatInput = ({ onSend, disabled }: ChatInputProps) => {
     };
 
     return (
-        <div className="flex items-center gap-2 p-4 border-t border-border bg-card/50">
+        <div className="flex items-center gap-2 p-4 border-t border-border">
             <Input
                 value={value}
                 onChange={(e) => setValue(e.target.value)}
@@ -43,6 +43,7 @@ export const ChatInput = ({ onSend, disabled }: ChatInputProps) => {
             >
                 <Send size={18} />
             </Button>
+           
         </div>
     );
 };

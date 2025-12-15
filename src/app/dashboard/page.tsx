@@ -27,15 +27,15 @@ export default function DashboardPage() {
         <AppShell>
             <div className="flex flex-col w-full h-full p-0 gap-6 min-h-0" style={{ paddingTop: '0px', paddingBottom: '0px', paddingLeft: '0px', paddingRight: '0px' }}>
                 <div className="flex-1 min-h-0">
-                    <div className="flex h-full w-full min-w-0 rounded-2xl bg-card/60 overflow-hidden divide-x divide-border">
+                    <div className="flex h-full w-full min-w-0 rounded-2xl overflow-hidden divide-x divide-border">
                         {/* Личные данные */}
                         <div className="w-[425px] min-w-[380px] max-w-[425px] flex-shrink-0 p-6 pr-2 overflow-hidden">
                             <PersonalInfoPanel />
                         </div>
 
                         {/* Секция резюме */}
-                        <ScrollArea className="relative flex-1 min-w-0 h-full p-6 overflow-hidden">
-                            <div className="relative flex flex-col gap-4 min-h-full">
+                        <ScrollArea className="relative flex-1 min-w-0 h-full">
+                            <div className="relative flex flex-col gap-4 min-h-full p-6">
                                 {showConfetti && (
                                     <div className="pointer-events-none absolute inset-0 overflow-hidden">
                                         {Array.from({ length: 80 }).map((_, i) => {

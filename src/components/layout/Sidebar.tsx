@@ -39,7 +39,7 @@ export const Sidebar = () => {
 
     return (
         <aside
-            className="top-0 left-0 z-40 fixed flex flex-col items-center bg-sidebar py-5 border-border w-24 h-screen"
+            className="top-0 left-0 z-40 fixed flex flex-col items-center py-5 border-border w-22 h-screen"
         >
             {/* Logo */}
             <Link href="/" className="mb-6">

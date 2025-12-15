@@ -39,7 +39,7 @@ export const useSearchStore = create<SearchState>((set) => ({
                 return;
             }
 
-            set({ results: data.candidates || [], isSearching: false });
+            set({ results: data.candidates || [], isSearching: false, error: null });
         } catch (error) {
             console.error('Search error:', error);
             set({

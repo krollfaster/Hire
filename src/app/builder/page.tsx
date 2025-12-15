@@ -514,9 +514,9 @@ function FilterSelect({
 
     return (
         <Select value={activeTab} onValueChange={(value) => onTabChange(value as FilterTab)}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-[170px] bg-card">
                 <SelectValue>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center bg-card gap-2">
                         {activeTabData?.label}
                         <Badge variant="secondary" className="px-1.5 py-0 text-xs h-5 min-w-5">
                             {getCount(activeTab)}
@@ -824,7 +824,7 @@ export default function BuilderPage() {
         <AppShell>
             <div className="flex w-full h-full">
                 <ChatPanel />
-                <div className="flex flex-col flex-1 bg-card p-6 min-h-0">
+                <div className="flex flex-col flex-1 p-6 min-h-0">
                     <TraitsPanel />
                 </div>
             </div>

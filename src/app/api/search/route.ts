@@ -146,7 +146,7 @@ export async function POST(req: Request) {
             return NextResponse.json({
                 candidates: [],
                 error: "Не удалось обработать ответ ИИ. Попробуйте переформулировать запрос."
-            });
+            }, { status: 500 });
         }
 
         // Process candidates and replace avatar numbers with actual URLs
