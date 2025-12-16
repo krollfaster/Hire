@@ -8,7 +8,8 @@ import prisma from "@/lib/prisma";
 export async function signInWithGoogle() {
   const supabase = await createClient();
   const headersList = await headers();
-  const origin = headersList.get("origin") || "http://localhost:3000";
+  // Используем переменную окружения для определения правильного URL
+  const origin = process.env.NEXT_PUBLIC_SITE_URL || headersList.get("origin") || "http://localhost:3000";
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
@@ -51,7 +52,8 @@ export async function signInWithEmail(email: string, password: string) {
 export async function signUpWithEmail(email: string, password: string) {
   const supabase = await createClient();
   const headersList = await headers();
-  const origin = headersList.get("origin") || "http://localhost:3000";
+  // Используем переменную окружения для определения правильного URL
+  const origin = process.env.NEXT_PUBLIC_SITE_URL || headersList.get("origin") || "http://localhost:3000";
 
   const { data, error } = await supabase.auth.signUp({
     email,
