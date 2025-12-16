@@ -17,5 +17,5 @@ export function AuthGuard() {
         }
     }, [isLoading, isAuthenticated, pathname]);
 
-    return <AuthModal open={open} onOpenChange={setOpen} />;
+    return <AuthModal open={open} onOpenChange={setOpen} closable={false} />;
 }
