@@ -14,14 +14,17 @@ import {
     Check,
     Trash2,
     X,
+
     type LucideIcon,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useTraitsStore, TraitAction } from "@/stores/useTraitsStore";
+import { useTraitsStore, TraitAction, TraitCategory, Trait } from "@/stores/useTraitsStore";
+
 import { useChatStore } from "@/stores/useChatStore";
 import { useProfessionStore } from "@/stores/useProfessionStore";
+import { Badge } from "@/components/ui/badge";
 import {
     ButtonGroup,
     ButtonGroupSeparator,
@@ -72,11 +75,44 @@ const MODEL_OPTIONS: ModelOption[] = [
     },
 ];
 
+const categoryConfig: Record<TraitCategory, {
+    label: string;
+    color: string;
+    bgColor: string;
+    borderColor: string;
+}> = {
+    skills: {
+        label: "Компетенции",
+        color: "text-blue-500",
+        bgColor: "bg-blue-500/10",
+        borderColor: "border-blue-500/30",
+    },
+    context: {
+        label: "Контекст",
+        color: "text-purple-500",
+        bgColor: "bg-purple-500/10",
+        borderColor: "border-purple-500/30",
+    },
+    artifacts: {
+        label: "Артефакты",
+        color: "text-green-500",
+        bgColor: "bg-green-500/10",
+        borderColor: "border-green-500/30",
+    },
+    attributes: {
+        label: "Атрибуты",
+        color: "text-amber-500",
+        bgColor: "bg-amber-500/10",
+        borderColor: "border-amber-500/30",
+    },
+};
+
 interface Message {
     id: string;
     content: string;
     role: "user" | "assistant";
     timestamp: Date;
+    actions?: TraitAction[];
 }
 
 interface Workplace {
@@ -263,11 +299,17 @@ export const ChatPanel = () => {
     const [isModelPickerOpen, setIsModelPickerOpen] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    // Connect to traits store
-    const { applyActions, getContextForAI } = useTraitsStore();
+    const traits = useTraitsStore(state => state.traits);
+    const applyActions = useTraitsStore(state => state.applyActions);
+    const getContextForAI = useTraitsStore(state => state.getContextForAI);
+    const setExternalHighlightIds = useTraitsStore(state => state.setExternalHighlightIds);
+    const deleteTraits = useTraitsStore(state => state.deleteTraits);
+
+
 
     // Get active profession for context
     const { activeProfession, setSetupModalOpen } = useProfessionStore();
+
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -338,9 +380,11 @@ export const ChatPanel = () => {
                 content: data.message || "Профиль обновлен.",
                 role: "assistant",
                 timestamp: new Date(),
+                actions: data.actions as TraitAction[],
             };
 
             setMessages([...newMessages, assistantMessage]);
+
         } catch (error) {
             console.error("Chat error:", error);
             const errorMessage: Message = {
@@ -373,21 +417,111 @@ export const ChatPanel = () => {
                         </div>
                     ) : (
                         <>
-                            {messages.map((message) => (
-                                <motion.div
-                                    key={message.id}
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className={cn(
-                                        "px-4 py-3 rounded-2xl max-w-[100%] text-sm",
-                                        message.role === "user"
-                                            ? "ml-auto text-muted-foreground px-0 py-0"
-                                            : "bg-muted text-foreground"
-                                    )}
-                                >
-                                    {message.content}
-                                </motion.div>
-                            ))}
+                            {messages.map((message) => {
+                                // Logic to display badges if there are created traits
+                                const createdTraits = message.actions?.filter(
+                                    (a) => a.type === "create" && a.data
+                                ) || [];
+
+                                let content: React.ReactNode = message.content;
+
+                                // Filter actions to only show badges for traits that still exist
+                                const validCreatedTraits = createdTraits.filter(action =>
+                                    action.type === 'create' && traits.some(t => t.id === action.data.id)
+                                );
+
+                                if (message.role === "assistant" && validCreatedTraits.length > 0) {
+                                    const counts = validCreatedTraits.reduce((acc, action) => {
+                                        if (action.type === "create") {
+                                            const cat = action.data.category;
+                                            acc[cat] = (acc[cat] || 0) + 1;
+                                        }
+                                        return acc;
+                                    }, {} as Record<TraitCategory, number>);
+
+                                    content = (
+                                        <div className="flex flex-wrap gap-2">
+                                            {Object.entries(counts).map(([cat, count]) => {
+                                                const category = cat as TraitCategory;
+                                                const config = categoryConfig[category];
+                                                if (!config) return null;
+
+                                                // Get IDs for this category in this message to pass to highlight/delete
+                                                const traitIds = validCreatedTraits
+                                                    .filter(a => a.type === "create" && a.data?.category === category)
+                                                    .map(a => (a as { type: "create"; data: Trait }).data.id);
+
+
+                                                return (
+                                                    <Badge
+                                                        key={category}
+                                                        variant="outline"
+                                                        className={cn(
+                                                            "group/badge relative gap-1.5 py-1 pr-8 pl-3 overflow-hidden font-normal text-sm transition-all duration-300 cursor-default",
+                                                            config.color,
+                                                            config.borderColor,
+                                                            config.bgColor
+                                                        )}
+                                                        onMouseEnter={() => setExternalHighlightIds(traitIds, 'view')}
+                                                        onMouseLeave={() => setExternalHighlightIds([])}
+                                                    >
+                                                        <span className="font-bold">+{count}</span>
+                                                        {count === 1 && category === 'context' ? 'Контекст' : // Special case for singular
+                                                            count === 1 && category === 'skills' ? 'Компетенция' :
+                                                                count === 1 && category === 'artifacts' ? 'Артефакт' :
+                                                                    count === 1 && category === 'attributes' ? 'Атрибут' :
+                                                                        config.label}
+
+                                                        {/* Close button always visible, minimal style */}
+                                                        <button
+                                                            className={cn(
+                                                                "top-1/2 right-1.5 absolute flex justify-center items-center p-1 rounded-full -translate-y-1/2 cursor-pointer",
+                                                                "text-muted-foreground/50 hover:text-destructive transition-colors duration-200"
+                                                            )}
+
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                deleteTraits(traitIds);
+                                                            }}
+                                                            onMouseEnter={(e) => {
+                                                                e.stopPropagation();
+                                                                setExternalHighlightIds(traitIds, 'delete');
+                                                            }}
+                                                            onMouseLeave={(e) => {
+                                                                e.stopPropagation();
+                                                                // When leaving delete button but still in badge, revert to view mode
+                                                                setExternalHighlightIds(traitIds, 'view');
+                                                            }}
+                                                        >
+                                                            <X size={14} />
+                                                        </button>
+                                                    </Badge>
+
+
+                                                );
+                                            })}
+                                        </div>
+                                    );
+                                }
+
+                                return (
+                                    <motion.div
+                                        key={message.id}
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        className={cn(
+                                            "px-4 py-3 rounded-2xl max-w-[100%] text-sm",
+                                            message.role === "user"
+                                                ? "ml-auto text-muted-foreground px-0 py-0"
+                                                : "bg-muted text-foreground",
+                                            // Remove background if displaying badges
+                                            message.role === "assistant" && createdTraits.length > 0 && "bg-transparent p-0"
+                                        )}
+                                    >
+                                        {content}
+                                    </motion.div>
+                                );
+                            })}
                             {isLoading && (
                                 <motion.div
                                     initial={{ opacity: 0 }}

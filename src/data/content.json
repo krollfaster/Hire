@@ -1,16 +1,17 @@
 {
-  "categories": ["hard_skills", "impact", "domain", "superpower"],
+  "categories": ["skills", "context", "artifacts", "attributes"],
   "categoryLabels": {
-    "hard_skills": "Навыки",
-    "impact": "Результаты",
-    "domain": "Сферы",
-    "superpower": "Суперсила"
+    "skills": "Компетенции",
+    "context": "Контекст",
+    "artifacts": "Артефакты",
+    "attributes": "Атрибуты"
   },
   "relationTypes": {
-    "uses": "Использует",
-    "enables": "Позволяет",
-    "part_of": "Часть",
-    "related": "Связано"
+    "stack": "Стек",
+    "in_domain": "В сфере",
+    "in_role": "В роли",
+    "result": "Результат",
+    "driver": "Драйвер"
   },
   "traits": []
 }

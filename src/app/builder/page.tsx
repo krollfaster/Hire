@@ -27,13 +27,10 @@ type ViewMode = "cards" | "graph";
 
 const tabs: { id: FilterTab; label: string }[] = [
     { id: "all", label: "Все" },
-    { id: "hard_skills", label: "Технологии" },
-    { id: "domain", label: "Сферы" },
-    { id: "process", label: "Методологии" },
-    { id: "impact", label: "Достижения" },
-    { id: "background", label: "Бэкграунд" },
-    { id: "culture", label: "Культура" },
-    { id: "superpower", label: "Суперсила" },
+    { id: "skills", label: "Компетенции" },
+    { id: "context", label: "Контекст" },
+    { id: "artifacts", label: "Артефакты" },
+    { id: "attributes", label: "Атрибуты" },
 ];
 
 const categoryConfig: Record<TraitCategory, {
@@ -46,8 +43,8 @@ const categoryConfig: Record<TraitCategory, {
     badgeHoverColor: string;
     titleHoverColor: string;
 }> = {
-    hard_skills: {
-        label: "Технология",
+    skills: {
+        label: "Компетенция",
         color: "text-blue-500",
         bgColor: "bg-blue-500/10",
         borderColor: "border-blue-500/30",
@@ -56,18 +53,8 @@ const categoryConfig: Record<TraitCategory, {
         badgeHoverColor: "group-hover:text-blue-500 group-hover:border-blue-500/50",
         titleHoverColor: "group-hover:text-blue-500",
     },
-    impact: {
-        label: "Достижение",
-        color: "text-green-500",
-        bgColor: "bg-green-500/10",
-        borderColor: "border-green-500/30",
-        hoverBg: "hover:bg-green-500/5",
-        hoverBorder: "hover:border-green-500/30",
-        badgeHoverColor: "group-hover:text-green-500 group-hover:border-green-500/50",
-        titleHoverColor: "group-hover:text-green-500",
-    },
-    domain: {
-        label: "Сфера",
+    context: {
+        label: "Контекст",
         color: "text-purple-500",
         bgColor: "bg-purple-500/10",
         borderColor: "border-purple-500/30",
@@ -76,8 +63,18 @@ const categoryConfig: Record<TraitCategory, {
         badgeHoverColor: "group-hover:text-purple-500 group-hover:border-purple-500/50",
         titleHoverColor: "group-hover:text-purple-500",
     },
-    superpower: {
-        label: "Суперсила",
+    artifacts: {
+        label: "Артефакт",
+        color: "text-green-500",
+        bgColor: "bg-green-500/10",
+        borderColor: "border-green-500/30",
+        hoverBg: "hover:bg-green-500/5",
+        hoverBorder: "hover:border-green-500/30",
+        badgeHoverColor: "group-hover:text-green-500 group-hover:border-green-500/50",
+        titleHoverColor: "group-hover:text-green-500",
+    },
+    attributes: {
+        label: "Атрибут",
         color: "text-amber-500",
         bgColor: "bg-amber-500/10",
         borderColor: "border-amber-500/30",
@@ -85,36 +82,6 @@ const categoryConfig: Record<TraitCategory, {
         hoverBorder: "hover:border-amber-500/30",
         badgeHoverColor: "group-hover:text-amber-500 group-hover:border-amber-500/50",
         titleHoverColor: "group-hover:text-amber-500",
-    },
-    process: {
-        label: "Методология",
-        color: "text-cyan-500",
-        bgColor: "bg-cyan-500/10",
-        borderColor: "border-cyan-500/30",
-        hoverBg: "hover:bg-cyan-500/5",
-        hoverBorder: "hover:border-cyan-500/30",
-        badgeHoverColor: "group-hover:text-cyan-500 group-hover:border-cyan-500/50",
-        titleHoverColor: "group-hover:text-cyan-500",
-    },
-    background: {
-        label: "Бэкграунд",
-        color: "text-pink-500",
-        bgColor: "bg-pink-500/10",
-        borderColor: "border-pink-500/30",
-        hoverBg: "hover:bg-pink-500/5",
-        hoverBorder: "hover:border-pink-500/30",
-        badgeHoverColor: "group-hover:text-pink-500 group-hover:border-pink-500/50",
-        titleHoverColor: "group-hover:text-pink-500",
-    },
-    culture: {
-        label: "Культура",
-        color: "text-orange-500",
-        bgColor: "bg-orange-500/10",
-        borderColor: "border-orange-500/30",
-        hoverBg: "hover:bg-orange-500/5",
-        hoverBorder: "hover:border-orange-500/30",
-        badgeHoverColor: "group-hover:text-orange-500 group-hover:border-orange-500/50",
-        titleHoverColor: "group-hover:text-orange-500",
     },
 };
 
@@ -159,7 +126,7 @@ interface TraitCardProps {
 }
 
 function TraitCard({ trait, onClick, onHover, isHighlighted }: TraitCardProps) {
-    const config = categoryConfig[trait.category] || categoryConfig.hard_skills;
+    const config = categoryConfig[trait.category] || categoryConfig.skills;
     const hasRelations = trait.relations && trait.relations.length > 0;
 
     return (
@@ -187,13 +154,10 @@ function TraitCard({ trait, onClick, onHover, isHighlighted }: TraitCardProps) {
                     // Highlighted state (related cards when another card is hovered)
                     isHighlighted && [
                         "shadow-lg -translate-y-1",
-                        trait.category === "hard_skills" && "bg-blue-500/5 border-blue-500/30",
-                        trait.category === "impact" && "bg-green-500/5 border-green-500/30",
-                        trait.category === "domain" && "bg-purple-500/5 border-purple-500/30",
-                        trait.category === "superpower" && "bg-amber-500/5 border-amber-500/30",
-                        trait.category === "process" && "bg-cyan-500/5 border-cyan-500/30",
-                        trait.category === "background" && "bg-pink-500/5 border-pink-500/30",
-                        trait.category === "culture" && "bg-orange-500/5 border-orange-500/30",
+                        trait.category === "skills" && "bg-blue-500/5 border-blue-500/30",
+                        trait.category === "context" && "bg-purple-500/5 border-purple-500/30",
+                        trait.category === "artifacts" && "bg-green-500/5 border-green-500/30",
+                        trait.category === "attributes" && "bg-amber-500/5 border-amber-500/30",
                     ]
                 )}
             >
@@ -350,10 +314,11 @@ function TraitsGrid({ traits, onTraitClick }: { traits: Trait[]; onTraitClick: (
 
 // Relation type labels
 const relationTypeLabels: Record<string, string> = {
-    uses: "Использует",
-    enables: "Позволяет",
-    part_of: "Часть",
-    related: "Связано с",
+    stack: "Стек",
+    in_domain: "В сфере",
+    in_role: "В роли",
+    result: "Результат",
+    driver: "Драйвер",
 };
 
 function TraitDetailSheet({
@@ -369,7 +334,7 @@ function TraitDetailSheet({
 }) {
     if (!trait) return null;
 
-    const config = categoryConfig[trait.category] || categoryConfig.hard_skills;
+    const config = categoryConfig[trait.category] || categoryConfig.skills;
     const importance = trait.importance ?? 0;
 
     // Get related traits details
@@ -414,13 +379,10 @@ function TraitDetailSheet({
                                     <div
                                         className={cn(
                                             "rounded-full h-full transition-all duration-500",
-                                            trait.category === "hard_skills" && "bg-blue-500",
-                                            trait.category === "impact" && "bg-green-500",
-                                            trait.category === "domain" && "bg-purple-500",
-                                            trait.category === "superpower" && "bg-amber-500",
-                                            trait.category === "process" && "bg-cyan-500",
-                                            trait.category === "background" && "bg-pink-500",
-                                            trait.category === "culture" && "bg-orange-500"
+                                            trait.category === "skills" && "bg-blue-500",
+                                            trait.category === "context" && "bg-purple-500",
+                                            trait.category === "artifacts" && "bg-green-500",
+                                            trait.category === "attributes" && "bg-amber-500"
                                         )}
                                         style={{ width: `${(importance / 5) * 100}%` }}
                                     />
@@ -444,7 +406,7 @@ function TraitDetailSheet({
                             {relatedTraits.length > 0 ? (
                                 <div className="space-y-2">
                                     {relatedTraits.map((related) => {
-                                        const relatedConfig = categoryConfig[related.category] || categoryConfig.hard_skills;
+                                        const relatedConfig = categoryConfig[related.category] || categoryConfig.skills;
                                         return (
                                             <div
                                                 key={related.id}
@@ -536,132 +498,134 @@ function TraitsPanel() {
 
     return (
         <div className="flex flex-col h-full">
-            {/* Header with Tabs and View Toggle */}
-            <div className="flex justify-between items-center gap-4 mb-6 h-[40px]">
-                <div className="flex items-center gap-2">
-                    {/* Undo/Redo кнопки */}
-                    <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={undo}
-                        disabled={!canUndo()}
-                        title="Отменить"
-                    >
-                        <Undo2 size={14} />
-                    </Button>
-                    <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={redo}
-                        disabled={!canRedo()}
-                        title="Повторить"
-                    >
-                        <Redo2 size={14} />
-                    </Button>
-
-                    {/* Вернуть сохранённое */}
-                    <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={handleResetToSaved}
-                        disabled={!hasUnsavedChanges()}
-                        title="Вернуть сохранённое состояние"
-                    >
-                        <RotateCcw size={14} />
-                    </Button>
-
-                    {/* Очистить */}
-                    {traits.length > 0 && (
-                        <Button
-                            size="sm"
-                            variant="destructive"
-                            className="shadow-sm"
-                            onClick={handleClearAll}
-                            title="Очистить"
-                        >
-                            <Trash2 size={14} />
-                        </Button>
-                    )}
-
-                    {/* Сохранение */}
-                    {(hasUnsavedChanges() || isSyncing) && (
-                        <Button
-                            size="sm"
-                            variant="default"
-                            onClick={handleSave}
-                            disabled={isSyncing}
-                            className="shadow-sm"
-                            title="Сохранить изменения"
-                        >
-                            <Save size={14} className="mr-1.5" />
-                            {isSyncing ? "Сохранение..." : "Сохранить"}
-                        </Button>
-                    )}
-                </div>
-
-                {/* View Toggle */}
-                <ToggleGroup
-                    type="single"
-                    value={viewMode}
-                    onValueChange={(value) => value && setViewMode(value as ViewMode)}
-                    size="sm"
-                >
-                    <ToggleGroupItem value="graph" aria-label="Граф связей">
-                        <GitBranch size={16} />
-                    </ToggleGroupItem>
-                    <ToggleGroupItem value="cards" aria-label="Карточки">
-                        <LayoutGrid size={16} />
-                    </ToggleGroupItem>
-                </ToggleGroup>
-            </div>
-
-            {/* Content */}
-            {viewMode === "cards" ? (
-                <div className="flex-1 -mr-6 pr-6 overflow-y-auto">
-                    {filteredTraits.length === 0 ? (
-                        traits.length === 0 ? (
-                            <EmptyState />
-                        ) : (
-                            <EmptyState
-                                message={`Нет карточек в категории "${tabs.find(t => t.id === activeTab)?.label}"`}
-                                showIcon={false}
-                            />
-                        )
-                    ) : (
-                        <TraitsGrid
-                            traits={filteredTraits}
-                            onTraitClick={handleTraitClick}
-                        />
-                    )}
-                </div>
+            {traits.length === 0 ? (
+                <EmptyState />
             ) : (
-                <div className="flex flex-col flex-1 -mx-6 min-h-0">
-                    <div className="flex-1 min-h-0 overflow-hidden">
-                        <TraitsGraph traits={filteredTraits} key={activeTab} />
-                    </div>
-                    <div className="flex justify-center bg-background px-6 shrink-0">
+                <>
+                    {/* Header with Tabs and View Toggle */}
+                    <div className="flex justify-between items-center gap-4 mb-6 h-[40px]">
+                        <div className="flex items-center gap-2">
+                            {/* Undo/Redo кнопки */}
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={undo}
+                                disabled={!canUndo()}
+                                title="Отменить"
+                            >
+                                <Undo2 size={14} />
+                            </Button>
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={redo}
+                                disabled={!canRedo()}
+                                title="Повторить"
+                            >
+                                <Redo2 size={14} />
+                            </Button>
+
+                            {/* Вернуть сохранённое */}
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={handleResetToSaved}
+                                disabled={!hasUnsavedChanges()}
+                                title="Вернуть сохранённое состояние"
+                            >
+                                <RotateCcw size={14} />
+                            </Button>
+
+                            {/* Очистить */}
+                            {traits.length > 0 && (
+                                <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    className="shadow-sm"
+                                    onClick={handleClearAll}
+                                    title="Очистить"
+                                >
+                                    <Trash2 size={14} />
+                                </Button>
+                            )}
+
+                            {/* Сохранение */}
+                            {(hasUnsavedChanges() || isSyncing) && (
+                                <Button
+                                    size="sm"
+                                    variant="default"
+                                    onClick={handleSave}
+                                    disabled={isSyncing}
+                                    className="shadow-sm"
+                                    title="Сохранить изменения"
+                                >
+                                    <Save size={14} className="mr-1.5" />
+                                    {isSyncing ? "Сохранение..." : "Сохранить"}
+                                </Button>
+                            )}
+                        </div>
+
+                        {/* View Toggle */}
                         <ToggleGroup
                             type="single"
-                            value={activeTab}
-                            onValueChange={(value) => value && setActiveTab(value as FilterTab)}
+                            value={viewMode}
+                            onValueChange={(value) => value && setViewMode(value as ViewMode)}
+                            size="sm"
                         >
-                            {tabs.map((tab) => (
-                                <ToggleGroupItem key={tab.id} value={tab.id}>
-                                    {tab.label}
-                                </ToggleGroupItem>
-                            ))}
+                            <ToggleGroupItem value="graph" aria-label="Граф связей">
+                                <GitBranch size={16} />
+                            </ToggleGroupItem>
+                            <ToggleGroupItem value="cards" aria-label="Карточки">
+                                <LayoutGrid size={16} />
+                            </ToggleGroupItem>
                         </ToggleGroup>
                     </div>
-                </div>
-            )}
 
-            {/* Detail Sheet */}
-            <TraitDetailSheet
-                trait={selectedTrait}
-                open={sheetOpen}
-                onOpenChange={setSheetOpen}
-                allTraits={traits}
-            />
+                    {/* Content */}
+                    {viewMode === "cards" ? (
+                        <div className="flex-1 -mr-6 pr-6 overflow-y-auto">
+                            {filteredTraits.length === 0 ? (
+                                <EmptyState
+                                    message={`Нет карточек в категории "${tabs.find(t => t.id === activeTab)?.label}"`}
+                                    showIcon={false}
+                                />
+                            ) : (
+                                <TraitsGrid
+                                    traits={filteredTraits}
+                                    onTraitClick={handleTraitClick}
+                                />
+                            )}
+                        </div>
+                    ) : (
+                        <div className="flex flex-col flex-1 -mx-6 min-h-0">
+                            <div className="flex-1 min-h-0 overflow-hidden">
+                                <TraitsGraph traits={filteredTraits} key={activeTab} />
+                            </div>
+                            <div className="flex justify-center bg-background px-6 shrink-0">
+                                <ToggleGroup
+                                    type="single"
+                                    value={activeTab}
+                                    onValueChange={(value) => value && setActiveTab(value as FilterTab)}
+                                >
+                                    {tabs.map((tab) => (
+                                        <ToggleGroupItem key={tab.id} value={tab.id}>
+                                            {tab.label}
+                                        </ToggleGroupItem>
+                                    ))}
+                                </ToggleGroup>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Detail Sheet */}
+                    <TraitDetailSheet
+                        trait={selectedTrait}
+                        open={sheetOpen}
+                        onOpenChange={setSheetOpen}
+                        allTraits={traits}
+                    />
+                </>
+            )}
         </div>
     );
 }

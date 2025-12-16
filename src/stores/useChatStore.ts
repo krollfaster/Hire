@@ -1,11 +1,15 @@
 import { create } from "zustand";
+import { TraitAction } from "./useTraitsStore";
+
 
 export interface ChatMessage {
     id: string;
     content: string;
     role: "user" | "assistant";
     timestamp: Date;
+    actions?: TraitAction[];
 }
+
 
 interface ChatState {
     messages: ChatMessage[];

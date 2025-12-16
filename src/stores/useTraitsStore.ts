@@ -1,11 +1,11 @@
 import { create } from 'zustand';
 
 // Types
-export type TraitCategory = "hard_skills" | "impact" | "domain" | "superpower" | "process" | "background" | "culture";
+export type TraitCategory = "skills" | "context" | "artifacts" | "attributes";
 
 export interface TraitRelation {
     targetId: string;
-    type: "uses" | "enables" | "part_of" | "related";
+    type: "stack" | "in_domain" | "in_role" | "result" | "driver";
 }
 
 export interface Trait {
@@ -33,47 +33,54 @@ interface TraitsState {
     historyIndex: number;      // Текущая позиция в истории (-1 = начало)
     isLoading: boolean;
     isSyncing: boolean;
-    
+
     // Apply actions from AI response (локально, без сохранения в БД)
     applyActions: (actions: TraitAction[]) => void;
-    
+
     // Replace all traits (локально, без сохранения в БД)
     replaceAll: (traits: Trait[]) => void;
-    
+
     // Undo/Redo
     undo: () => void;
     redo: () => void;
-    
+
     // Computed getters
     canUndo: () => boolean;
     canRedo: () => boolean;
     hasUnsavedChanges: () => boolean;
-    
+
     // Reset to saved state
     resetToSaved: () => void;
-    
+
     // Get simplified context for AI (to save tokens)
     getContextForAI: () => { id: string; label: string; category: TraitCategory }[];
-    
+
     // Sync with database
     loadFromServer: () => Promise<void>;
     saveToServer: () => Promise<void>;
+
+    // External interaction
+    externalHighlightIds: string[];
+    externalHighlightMode: 'view' | 'delete';
+    setExternalHighlightIds: (ids: string[], mode?: 'view' | 'delete') => void;
+    deleteTraits: (ids: string[]) => void;
 }
+
 
 // Helper to push state to history
 function pushToHistory(history: Trait[][], historyIndex: number, newState: Trait[]): { history: Trait[][]; historyIndex: number } {
     // Remove any future states if we're not at the end
     const newHistory = history.slice(0, historyIndex + 1);
-    
+
     // Add new state
     newHistory.push(newState);
-    
+
     // Limit history size
     if (newHistory.length > MAX_HISTORY_SIZE) {
         newHistory.shift();
         return { history: newHistory, historyIndex: newHistory.length - 1 };
     }
-    
+
     return { history: newHistory, historyIndex: newHistory.length - 1 };
 }
 
@@ -103,7 +110,7 @@ export const useTraitsStore = create<TraitsState>((set, get) => ({
                             newTraits.push(action.data);
                         }
                         break;
-                    
+
                     case "update":
                         newTraits = newTraits.map(trait =>
                             trait.id === action.id
@@ -111,7 +118,7 @@ export const useTraitsStore = create<TraitsState>((set, get) => ({
                                 : trait
                         );
                         break;
-                    
+
                     case "delete":
                         newTraits = newTraits.filter(trait => trait.id !== action.id);
                         // Also remove references from relations
@@ -130,8 +137,8 @@ export const useTraitsStore = create<TraitsState>((set, get) => ({
                 state.traits
             );
 
-            return { 
-                traits: newTraits, 
+            return {
+                traits: newTraits,
                 history,
                 historyIndex
             };
@@ -158,20 +165,20 @@ export const useTraitsStore = create<TraitsState>((set, get) => ({
     undo: () => {
         set((state) => {
             if (state.historyIndex < 0) return state;
-            
+
             // Save current state to history if we're at the end
             let history = state.history;
             let historyIndex = state.historyIndex;
-            
+
             // If we're at the latest position and haven't saved current state yet
             if (historyIndex === history.length - 1) {
                 // Push current state so we can redo back to it
                 history = [...history, state.traits];
             }
-            
+
             // Get previous state from history
             const previousState = history[historyIndex];
-            
+
             return {
                 traits: previousState,
                 history,
@@ -183,10 +190,10 @@ export const useTraitsStore = create<TraitsState>((set, get) => ({
     redo: () => {
         set((state) => {
             if (state.historyIndex >= state.history.length - 1) return state;
-            
+
             const nextIndex = state.historyIndex + 1;
             const nextState = state.history[nextIndex + 1] || state.history[nextIndex];
-            
+
             // If there's a state after the next index, use it
             if (state.history[nextIndex + 1]) {
                 return {
@@ -194,7 +201,7 @@ export const useTraitsStore = create<TraitsState>((set, get) => ({
                     historyIndex: nextIndex
                 };
             }
-            
+
             return state;
         });
     },
@@ -234,7 +241,7 @@ export const useTraitsStore = create<TraitsState>((set, get) => ({
             if (response.ok) {
                 const data = await response.json();
                 if (data.traits && Array.isArray(data.traits)) {
-                    set({ 
+                    set({
                         traits: data.traits,
                         savedTraits: data.traits,
                         history: [],
@@ -259,7 +266,7 @@ export const useTraitsStore = create<TraitsState>((set, get) => ({
                 body: JSON.stringify({ traits }),
             });
             // После успешного сохранения обновляем savedTraits и очищаем историю
-            set({ 
+            set({
                 savedTraits: traits,
                 history: [],
                 historyIndex: -1
@@ -269,5 +276,43 @@ export const useTraitsStore = create<TraitsState>((set, get) => ({
         } finally {
             set({ isSyncing: false });
         }
+    },
+
+    externalHighlightIds: [],
+    externalHighlightMode: 'view',
+    setExternalHighlightIds: (ids, mode = 'view') => set({ externalHighlightIds: ids, externalHighlightMode: mode }),
+
+    deleteTraits: (ids) => {
+        set((state) => {
+            // Find all traits to delete including the given ids and anything that depends on them?
+            // For now, we only delete the specific traits requested (and their relations will be cleaned up by the delete logic)
+            // But wait, our 'delete' action in applyActions handles single ID. 
+            // We need to batch delete.
+
+            const idsToDelete = new Set(ids);
+
+            // Also find connections to remove
+            let newTraits = state.traits.filter(trait => !idsToDelete.has(trait.id));
+
+            // Cleanup relations in remaining traits
+            newTraits = newTraits.map(trait => ({
+                ...trait,
+                relations: trait.relations.filter(rel => !idsToDelete.has(rel.targetId))
+            }));
+
+            // Push to history
+            const { history, historyIndex } = pushToHistory(
+                state.history,
+                state.historyIndex,
+                state.traits
+            );
+
+            return {
+                traits: newTraits,
+                history,
+                historyIndex,
+                externalHighlightIds: [] // Clear highlights after delete
+            };
+        });
     },
 }));

@@ -36,6 +36,7 @@ import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { AuthModal } from "@/components/auth/AuthModal"
+import { signOut } from "@/app/actions/auth"
 
 interface NavUserProps {
     user: {
@@ -52,8 +53,7 @@ export function NavUser({ user }: NavUserProps) {
     const [authModalOpen, setAuthModalOpen] = useState(false)
 
     const handleLogout = async () => {
-        await supabase.auth.signOut()
-        router.refresh()
+        await signOut()
     }
 
     const getInitials = (name: string) => {
@@ -71,7 +71,7 @@ export function NavUser({ user }: NavUserProps) {
                     <SidebarMenuItem>
                         <Button
                             variant="ghost"
-                            className="w-full justify-start"
+                            className="justify-start w-full"
                             onClick={() => setAuthModalOpen(true)}
                         >
                             <User className="size-4" />

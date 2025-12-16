@@ -94,7 +94,6 @@ export function TeamSwitcher() {
                     open={isSetupModalOpen}
                     onOpenChange={setSetupModalOpen}
                     onSuccess={handleProfessionCreated}
-                    required={isRequired}
                 />
             </>
         )

@@ -79,7 +79,7 @@ export function ProfessionSetupModal({ open, onOpenChange, onSuccess, required =
 
     return (
         <Dialog open={open} onOpenChange={handleOpenChange}>
-            <DialogContent 
+            <DialogContent
                 className="sm:max-w-md"
                 onPointerDownOutside={(e) => required && e.preventDefault()}
                 onEscapeKeyDown={(e) => required && e.preventDefault()}
@@ -87,7 +87,7 @@ export function ProfessionSetupModal({ open, onOpenChange, onSuccess, required =
             >
                 <DialogHeader>
                     <div className="flex items-center gap-3 mb-2">
-                        <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10">
+                        <div className="flex justify-center items-center bg-primary/10 rounded-xl w-10 h-10">
                             <Briefcase className="w-5 h-5 text-primary" />
                         </div>
                         <div>
@@ -127,7 +127,7 @@ export function ProfessionSetupModal({ open, onOpenChange, onSuccess, required =
                         </Select>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="gap-3 grid grid-cols-2">
                         <div className="space-y-2">
                             <Label htmlFor="salaryMin">ЗП от (₽)</Label>
                             <Input
@@ -155,7 +155,7 @@ export function ProfessionSetupModal({ open, onOpenChange, onSuccess, required =
                     </div>
 
                     {error && (
-                        <p className="text-sm text-destructive">{error}</p>
+                        <p className="text-destructive text-sm">{error}</p>
                     )}
 
                     <div className="flex justify-end gap-2 pt-2">
@@ -166,13 +166,13 @@ export function ProfessionSetupModal({ open, onOpenChange, onSuccess, required =
                                 onClick={() => onOpenChange(false)}
                                 disabled={isSyncing}
                             >
-                                Отмена
+                                Закрыть
                             </Button>
                         )}
                         <Button type="submit" disabled={isSyncing}>
                             {isSyncing ? (
                                 <>
-                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    <Loader2 className="mr-2 w-4 h-4 animate-spin" />
                                     Создание...
                                 </>
                             ) : (
@@ -182,7 +182,7 @@ export function ProfessionSetupModal({ open, onOpenChange, onSuccess, required =
                     </div>
                 </form>
             </DialogContent>
-        </Dialog>
+        </Dialog >
     );
 }
 

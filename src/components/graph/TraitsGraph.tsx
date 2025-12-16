@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
-import { Trait, TraitCategory } from "@/stores/useTraitsStore";
+import { Trait, TraitCategory, useTraitsStore } from "@/stores/useTraitsStore";
+
 
 interface TraitsGraphProps {
     traits: Trait[];
@@ -22,23 +23,31 @@ interface GraphLink extends d3.SimulationLinkDatum<GraphNode> {
 }
 
 const categoryColors: Record<TraitCategory, string> = {
-    hard_skills: "#3b82f6", // blue-500
-    impact: "#22c55e",      // green-500
-    domain: "#a855f7",      // purple-500
-    superpower: "#f59e0b",  // amber-500
-    process: "#06b6d4",     // cyan-500
-    background: "#ec4899",  // pink-500
-    culture: "#f97316",     // orange-500
+    skills: "#3b82f6",     // blue-500 (Компетенции)
+    context: "#a855f7",    // purple-500 (Контекст)
+    artifacts: "#22c55e",  // green-500 (Артефакты)
+    attributes: "#f59e0b", // amber-500 (Атрибуты)
 };
+
+const DEFAULT_COLOR = "#6b7280"; // gray-500 fallback для старых/неизвестных категорий
+
+function getNodeColor(category: TraitCategory): string {
+    return categoryColors[category] || DEFAULT_COLOR;
+}
 
 export function TraitsGraph({ traits }: TraitsGraphProps) {
     const svgRef = useRef<SVGSVGElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
 
+    const externalHighlightIds = useTraitsStore(state => state.externalHighlightIds);
+    const externalHighlightMode = useTraitsStore(state => state.externalHighlightMode);
+
     // Update dimensions on resize
+
     useEffect(() => {
         const updateDimensions = () => {
+
             if (containerRef.current) {
                 const { width, height } = containerRef.current.getBoundingClientRect();
                 setDimensions({ width, height });
@@ -155,12 +164,31 @@ export function TraitsGraph({ traits }: TraitsGraphProps) {
         // Draw node circles
         node.append("circle")
             .attr("r", d => getNodeRadius(d.importance))
-            .attr("fill", d => categoryColors[d.category])
+            .attr("fill", d => getNodeColor(d.category))
             .attr("fill-opacity", 0.8)
-            .attr("stroke", d => categoryColors[d.category])
+            .attr("stroke", d => getNodeColor(d.category))
             .attr("stroke-width", 2)
             .attr("stroke-opacity", 0.5)
             .style("filter", "url(#glow)");
+
+        // Draw delete icon (centered, hidden by default)
+        node.append("path")
+            .attr("d", "M18 6 6 18 M6 6 18 18") // X icon path
+            .attr("transform", d => `translate(-13.5, -13.5) scale(1.125)`) // Center and scale 1.5x bigger again (was 0.75 -> 1.125)
+            .attr("fill", "none")
+            .attr("stroke", "white")
+            .attr("stroke-width", 2)
+            .attr("stroke-linecap", "round")
+            .attr("stroke-linejoin", "round")
+            .attr("class", "delete-icon")
+            .attr("opacity", 0)
+            .style("pointer-events", "none");
+
+
+
+
+
+
 
         // Draw node labels
         node.append("text")
@@ -172,6 +200,8 @@ export function TraitsGraph({ traits }: TraitsGraphProps) {
             .attr("fill-opacity", 0.9)
             .style("pointer-events", "none")
             .style("user-select", "none");
+
+
 
         // Highlight on hover
         node.on("mouseenter", function (event, d) {
@@ -260,6 +290,99 @@ export function TraitsGraph({ traits }: TraitsGraphProps) {
             simulation.stop();
         };
     }, [traits, dimensions]);
+
+    // Handle external highlighting without restarting simulation
+    useEffect(() => {
+        if (!svgRef.current) return;
+        const svg = d3.select(svgRef.current);
+        const node = svg.selectAll(".nodes g");
+        const link = svg.selectAll(".links line");
+
+        if (node.empty()) return;
+
+        // Determine connected nodes
+        const highlightIds = new Set(externalHighlightIds || []);
+        const connectedIds = new Set<string>();
+
+        if (highlightIds.size > 0) {
+            // Add self
+            highlightIds.forEach(id => connectedIds.add(id));
+
+            // Add neighbors
+            link.each((d: any) => {
+                const sourceId = typeof d.source === "object" ? d.source.id : d.source;
+                const targetId = typeof d.target === "object" ? d.target.id : d.target;
+
+                if (highlightIds.has(sourceId)) connectedIds.add(targetId);
+                if (highlightIds.has(targetId)) connectedIds.add(sourceId);
+            });
+        }
+
+        const isDeleteMode = externalHighlightMode === 'delete';
+
+        // Apply highlighting logic
+        node.select("circle")
+            .attr("fill", (d: any) => {
+                if (highlightIds.has(d.id)) {
+                    if (isDeleteMode) return "#ef4444"; // Red for delete
+                    return getNodeColor(d.category); // Category color for normal highlight
+                }
+                return getNodeColor(d.category);
+            })
+            .attr("fill-opacity", (d: any) => {
+                if (highlightIds.size > 0) {
+                    return connectedIds.has(d.id) ? 1 : 0.1;
+                }
+                return 0.8;
+            })
+            .attr("stroke", (d: any) => {
+                if (highlightIds.has(d.id)) {
+                    if (isDeleteMode) return "#b91c1c"; // Dark red for delete
+                    return getNodeColor(d.category);
+                }
+                return getNodeColor(d.category);
+            })
+            .attr("stroke-width", (d: any) => highlightIds.has(d.id) ? 3 : 2)
+            .attr("stroke-opacity", (d: any) => {
+                if (highlightIds.size > 0) {
+                    return connectedIds.has(d.id) ? 1 : 0.1;
+                }
+                return 0.5;
+            });
+
+        // Toggle delete icon visibility
+        node.select(".delete-icon")
+            .attr("opacity", (d: any) => (highlightIds.has(d.id) && isDeleteMode) ? 1 : 0);
+
+        // Hide text if trash icon is visible to avoid clutter? Or keep it?
+        // Let's hide text only for the deleted node when in delete mode for cleaner look.
+        node.select("text")
+            .attr("fill-opacity", (d: any) => {
+                if (highlightIds.has(d.id) && isDeleteMode) return 0; // Hide text when trash is shown
+                if (highlightIds.size > 0) {
+                    return connectedIds.has(d.id) ? 0.9 : 0.1;
+                }
+                return 0.9;
+            });
+
+        // Dim links not connected to HIGHlighted nodes
+        link.attr("stroke-opacity", (d: any) => {
+            if (highlightIds.size > 0) {
+                const sourceId = typeof d.source === "object" ? d.source.id : d.source;
+                const targetId = typeof d.target === "object" ? d.target.id : d.target;
+
+                // Highlight links directly connected to the BADGE items
+                if (highlightIds.has(sourceId) || highlightIds.has(targetId)) {
+                    return 0.6;
+                }
+                return 0.05;
+            }
+            return 0.2;
+        });
+
+    }, [externalHighlightIds, externalHighlightMode]);
+
+
 
     // Calculate node radius based on importance (1-5 -> 8-24px)
     function getNodeRadius(importance: number): number {
