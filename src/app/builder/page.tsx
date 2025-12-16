@@ -20,7 +20,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { Star, Link2, LayoutGrid, GitBranch, ArrowRight, Trash2 } from "lucide-react";
+import { Star, Link2, LayoutGrid, GitBranch, ArrowRight, Trash2, Undo2, Redo2, Save, RotateCcw } from "lucide-react";
 
 type FilterTab = "all" | TraitCategory;
 type ViewMode = "cards" | "graph";
@@ -493,6 +493,15 @@ function TraitDetailSheet({
 function TraitsPanel() {
     const traits = useTraitsStore((state) => state.traits);
     const replaceAllTraits = useTraitsStore((state) => state.replaceAll);
+    const undo = useTraitsStore((state) => state.undo);
+    const redo = useTraitsStore((state) => state.redo);
+    const saveToServer = useTraitsStore((state) => state.saveToServer);
+    const resetToSaved = useTraitsStore((state) => state.resetToSaved);
+    const canUndo = useTraitsStore((state) => state.canUndo);
+    const canRedo = useTraitsStore((state) => state.canRedo);
+    const hasUnsavedChanges = useTraitsStore((state) => state.hasUnsavedChanges);
+    const isSyncing = useTraitsStore((state) => state.isSyncing);
+
     const { reset: resetChat } = useChatStore();
     const [viewMode, setViewMode] = useState<ViewMode>("graph");
     const [activeTab, setActiveTab] = useState<FilterTab>("all");
@@ -500,7 +509,7 @@ function TraitsPanel() {
     const [sheetOpen, setSheetOpen] = useState(false);
 
     const getFilteredTraits = (tabId: FilterTab) => {
-        let filtered = tabId === "all" ? traits : traits.filter(trait => trait.category === tabId);
+        const filtered = tabId === "all" ? traits : traits.filter(trait => trait.category === tabId);
         // Sort by importance (descending - highest importance first)
         return [...filtered].sort((a, b) => (b.importance ?? 0) - (a.importance ?? 0));
     };
@@ -517,20 +526,75 @@ function TraitsPanel() {
         replaceAllTraits([]);
     };
 
+    const handleSave = async () => {
+        await saveToServer();
+    };
+
+    const handleResetToSaved = () => {
+        resetToSaved();
+    };
+
     return (
         <div className="flex flex-col h-full">
             {/* Header with Tabs and View Toggle */}
             <div className="flex justify-between items-center gap-4 mb-6 h-[40px]">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                    {/* Undo/Redo кнопки */}
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={undo}
+                        disabled={!canUndo()}
+                        title="Отменить"
+                    >
+                        <Undo2 size={14} />
+                    </Button>
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={redo}
+                        disabled={!canRedo()}
+                        title="Повторить"
+                    >
+                        <Redo2 size={14} />
+                    </Button>
+
+                    {/* Вернуть сохранённое */}
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleResetToSaved}
+                        disabled={!hasUnsavedChanges()}
+                        title="Вернуть сохранённое состояние"
+                    >
+                        <RotateCcw size={14} />
+                    </Button>
+
+                    {/* Очистить */}
                     {traits.length > 0 && (
                         <Button
                             size="sm"
                             variant="destructive"
                             className="shadow-sm"
                             onClick={handleClearAll}
+                            title="Очистить"
                         >
-                            <Trash2 size={14} className="mr-1.5" />
-                            Очистить
+                            <Trash2 size={14} />
+                        </Button>
+                    )}
+
+                    {/* Сохранение */}
+                    {(hasUnsavedChanges() || isSyncing) && (
+                        <Button
+                            size="sm"
+                            variant="default"
+                            onClick={handleSave}
+                            disabled={isSyncing}
+                            className="shadow-sm"
+                            title="Сохранить изменения"
+                        >
+                            <Save size={14} className="mr-1.5" />
+                            {isSyncing ? "Сохранение..." : "Сохранить"}
                         </Button>
                     )}
                 </div>
