@@ -39,7 +39,7 @@ interface NavItem {
 
 const candidateNavItems: NavItem[] = [
     { href: "/builder", label: "Мои навыки", icon: PenLine },
-    { href: "/messages", label: "Предложения", icon: MessageCircle },
+    { href: "/messages", label: "Предложения", icon: MessageCircle, disabled: true },
 ]
 
 const candidateToolsItems: NavItem[] = [
@@ -75,11 +75,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                                 <SidebarMenuItem key={item.label}>
                                     <SidebarMenuButton
                                         asChild
-                                        isActive={pathname === item.href || pathname?.startsWith(item.href + "/")}
+                                        isActive={!item.disabled && (pathname === item.href || pathname?.startsWith(item.href + "/"))}
                                         disabled={item.disabled}
                                         tooltip={item.label}
                                     >
-                                        <Link href={item.disabled ? "#" : item.href}>
+                                        <Link href={item.disabled ? "#" : item.href} className={item.disabled ? "pointer-events-none opacity-50" : ""}>
                                             <item.icon />
                                             <span>{item.label}</span>
                                         </Link>

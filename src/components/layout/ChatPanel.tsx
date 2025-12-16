@@ -360,7 +360,7 @@ export const ChatPanel = () => {
 
     return (
         <>
-            <div className="flex flex-col bg-sidebar pt-5 border-border border-l w-[400px] h-full">
+            <div className="flex flex-col bg-sidebar pt-5 border-border border-l w-[355px] h-full">
 
 
                 {/* Messages / Empty State */}
@@ -379,9 +379,9 @@ export const ChatPanel = () => {
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     className={cn(
-                                        "px-4 py-3 rounded-2xl max-w-[85%] text-sm",
+                                        "px-4 py-3 rounded-2xl max-w-[100%] text-sm",
                                         message.role === "user"
-                                            ? "ml-auto bg-primary text-primary-foreground"
+                                            ? "ml-auto text-muted-foreground px-0 py-0"
                                             : "bg-muted text-foreground"
                                     )}
                                 >

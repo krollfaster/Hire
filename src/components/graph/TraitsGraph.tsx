@@ -69,7 +69,7 @@ export function TraitsGraph({ traits }: TraitsGraphProps) {
         // Create links from relations
         const links: GraphLink[] = [];
         const nodeIds = new Set(nodes.map(n => n.id));
-        
+
         traits.forEach(trait => {
             trait.relations?.forEach(relation => {
                 if (nodeIds.has(relation.targetId)) {
@@ -111,7 +111,7 @@ export function TraitsGraph({ traits }: TraitsGraphProps) {
 
         // Create gradient definitions for links
         const defs = svg.append("defs");
-        
+
         // Create glow filter
         const filter = defs.append("filter")
             .attr("id", "glow")
@@ -119,11 +119,11 @@ export function TraitsGraph({ traits }: TraitsGraphProps) {
             .attr("y", "-50%")
             .attr("width", "200%")
             .attr("height", "200%");
-        
+
         filter.append("feGaussianBlur")
             .attr("stdDeviation", "3")
             .attr("result", "coloredBlur");
-        
+
         const feMerge = filter.append("feMerge");
         feMerge.append("feMergeNode").attr("in", "coloredBlur");
         feMerge.append("feMergeNode").attr("in", "SourceGraphic");
@@ -174,11 +174,11 @@ export function TraitsGraph({ traits }: TraitsGraphProps) {
             .style("user-select", "none");
 
         // Highlight on hover
-        node.on("mouseenter", function(event, d) {
+        node.on("mouseenter", function (event, d) {
             // Highlight connected nodes
             const connectedIds = new Set<string>();
             connectedIds.add(d.id);
-            
+
             links.forEach(l => {
                 const sourceId = typeof l.source === "object" ? l.source.id : l.source;
                 const targetId = typeof l.target === "object" ? l.target.id : l.target;
@@ -190,7 +190,7 @@ export function TraitsGraph({ traits }: TraitsGraphProps) {
             node.select("circle")
                 .attr("fill-opacity", n => connectedIds.has(n.id) ? 1 : 0.2)
                 .attr("stroke-opacity", n => connectedIds.has(n.id) ? 1 : 0.1);
-            
+
             node.select("text")
                 .attr("fill-opacity", n => connectedIds.has(n.id) ? 1 : 0.2);
 
@@ -206,12 +206,12 @@ export function TraitsGraph({ traits }: TraitsGraphProps) {
             });
         });
 
-        node.on("mouseleave", function() {
+        node.on("mouseleave", function () {
             // Reset all
             node.select("circle")
                 .attr("fill-opacity", 0.8)
                 .attr("stroke-opacity", 0.5);
-            
+
             node.select("text")
                 .attr("fill-opacity", 0.9);
 
@@ -268,8 +268,8 @@ export function TraitsGraph({ traits }: TraitsGraphProps) {
 
     if (traits.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center h-full text-center px-8">
-                <div className="w-20 h-20 rounded-2xl bg-muted flex items-center justify-center mb-4">
+            <div className="flex flex-col justify-center items-center px-8 h-full text-center">
+                <div className="flex justify-center items-center bg-muted mb-4 rounded-2xl w-20 h-20">
                     <svg
                         className="w-10 h-10 text-muted-foreground"
                         fill="none"
@@ -284,10 +284,10 @@ export function TraitsGraph({ traits }: TraitsGraphProps) {
                         />
                     </svg>
                 </div>
-                <h3 className="text-lg font-semibold text-foreground mb-2">
+                <h3 className="mb-2 font-semibold text-foreground text-lg">
                     Нет элементов для отображения
                 </h3>
-                <p className="text-muted-foreground text-sm max-w-md">
+                <p className="max-w-md text-muted-foreground text-sm">
                     Добавьте навыки и достижения через чат или выберите другую категорию.
                 </p>
             </div>
@@ -295,7 +295,7 @@ export function TraitsGraph({ traits }: TraitsGraphProps) {
     }
 
     return (
-        <div ref={containerRef} className="w-full h-full min-h-[400px] relative">
+        <div ref={containerRef} className="relative w-full h-full min-h-[400px]">
             <svg
                 ref={svgRef}
                 width={dimensions.width}
@@ -303,32 +303,8 @@ export function TraitsGraph({ traits }: TraitsGraphProps) {
                 className="w-full h-full"
                 style={{ background: "transparent" }}
             />
-            
-            {/* Legend */}
-            <div className="absolute bottom-4 left-4 flex flex-wrap gap-3 text-xs">
-                {Object.entries(categoryColors).map(([category, color]) => (
-                    <div key={category} className="flex items-center gap-1.5">
-                        <div 
-                            className="w-3 h-3 rounded-full" 
-                            style={{ backgroundColor: color }}
-                        />
-                        <span className="text-muted-foreground">
-                            {category === "hard_skills" && "Технологии"}
-                            {category === "impact" && "Достижения"}
-                            {category === "domain" && "Сферы"}
-                            {category === "superpower" && "Суперсила"}
-                            {category === "process" && "Методологии"}
-                            {category === "background" && "Бэкграунд"}
-                            {category === "culture" && "Культура"}
-                        </span>
-                    </div>
-                ))}
-            </div>
 
-            {/* Controls hint */}
-            <div className="absolute bottom-4 right-4 text-xs text-muted-foreground">
-                Колёсико — масштаб • Перетаскивание — перемещение
-            </div>
+
         </div>
     );
 }

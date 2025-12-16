@@ -17,13 +17,6 @@ import {
     SheetTitle,
     SheetDescription,
 } from "@/components/ui/sheet";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -496,55 +489,6 @@ function TraitDetailSheet({
     );
 }
 
-// Custom Select component for filtering
-function FilterSelect({
-    activeTab,
-    onTabChange,
-    traits
-}: {
-    activeTab: FilterTab;
-    onTabChange: (tab: FilterTab) => void;
-    traits: Trait[];
-}) {
-    const getCount = (tabId: FilterTab) => {
-        if (tabId === "all") return traits.length;
-        return traits.filter(t => t.category === tabId).length;
-    };
-
-    const activeTabData = tabs.find(tab => tab.id === activeTab);
-
-    return (
-        <Select value={activeTab} onValueChange={(value) => onTabChange(value as FilterTab)}>
-            <SelectTrigger className="bg-card w-[170px]">
-                <SelectValue>
-                    <div className="flex items-center gap-2 bg-card">
-                        {activeTabData?.label}
-                        <Badge variant="secondary" className="px-1.5 py-0 min-w-5 h-5 text-xs">
-                            {getCount(activeTab)}
-                        </Badge>
-                    </div>
-                </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-                {tabs.map((tab) => {
-                    const count = getCount(tab.id);
-                    return (
-                        <SelectItem key={tab.id} value={tab.id}>
-                            <div className="flex justify-between items-center gap-2 w-full">
-                                <span>{tab.label}</span>
-                                {count > 0 && (
-                                    <Badge variant="secondary" className="px-1.5 py-0 min-w-5 h-5 text-xs">
-                                        {count}
-                                    </Badge>
-                                )}
-                            </div>
-                        </SelectItem>
-                    );
-                })}
-            </SelectContent>
-        </Select>
-    );
-}
 
 function TraitsPanel() {
     const traits = useTraitsStore((state) => state.traits);
@@ -576,13 +520,8 @@ function TraitsPanel() {
     return (
         <div className="flex flex-col h-full">
             {/* Header with Tabs and View Toggle */}
-            <div className="flex justify-between items-center gap-4 mb-6">
+            <div className="flex justify-between items-center gap-4 mb-6 h-[40px]">
                 <div className="flex items-center gap-3">
-                    <FilterSelect
-                        activeTab={activeTab}
-                        onTabChange={setActiveTab}
-                        traits={traits}
-                    />
                     {traits.length > 0 && (
                         <Button
                             size="sm"
@@ -604,12 +543,10 @@ function TraitsPanel() {
                     size="sm"
                 >
                     <ToggleGroupItem value="graph" aria-label="Граф связей">
-                        <GitBranch size={16} className="mr-2" />
-                        Граф связей
+                        <GitBranch size={16} />
                     </ToggleGroupItem>
                     <ToggleGroupItem value="cards" aria-label="Карточки">
-                        <LayoutGrid size={16} className="mr-2" />
-                        Карточки
+                        <LayoutGrid size={16} />
                     </ToggleGroupItem>
                 </ToggleGroup>
             </div>
@@ -634,8 +571,23 @@ function TraitsPanel() {
                     )}
                 </div>
             ) : (
-                <div className="flex-1 -mx-6 -mb-6 overflow-hidden">
-                    <TraitsGraph traits={filteredTraits} key={activeTab} />
+                <div className="flex flex-col flex-1 -mx-6 min-h-0">
+                    <div className="flex-1 min-h-0 overflow-hidden">
+                        <TraitsGraph traits={filteredTraits} key={activeTab} />
+                    </div>
+                    <div className="flex justify-center bg-background px-6 shrink-0">
+                        <ToggleGroup
+                            type="single"
+                            value={activeTab}
+                            onValueChange={(value) => value && setActiveTab(value as FilterTab)}
+                        >
+                            {tabs.map((tab) => (
+                                <ToggleGroupItem key={tab.id} value={tab.id}>
+                                    {tab.label}
+                                </ToggleGroupItem>
+                            ))}
+                        </ToggleGroup>
+                    </div>
                 </div>
             )}
 
@@ -654,7 +606,7 @@ export default function BuilderPage() {
     return (
         <AppShell>
             <div className="flex w-full h-full">
-                <div className="flex flex-col flex-1 p-6 min-h-0">
+                <div className="flex flex-col flex-1 p-3 px-4 min-h-0">
                     <TraitsPanel />
                 </div>
                 <ChatPanel />
