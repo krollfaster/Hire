@@ -3,6 +3,7 @@
 import {
     BadgeCheck,
     Bell,
+    ChevronRight,
     ChevronsUpDown,
     CreditCard,
     LogOut,
@@ -15,6 +16,7 @@ import {
     AvatarFallback,
     AvatarImage,
 } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -67,14 +69,15 @@ export function NavUser({ user }: NavUserProps) {
             <>
                 <SidebarMenu>
                     <SidebarMenuItem>
-                        <SidebarMenuButton size="lg" onClick={() => setAuthModalOpen(true)}>
-                            <div className="flex justify-center items-center bg-sidebar-primary rounded-lg size-8 aspect-square text-sidebar-primary-foreground">
-                                <User className="size-4" />
-                            </div>
-                            <div className="flex-1 grid text-sm text-left leading-tight">
-                                <span className="font-semibold truncate">Войти</span>
-                            </div>
-                        </SidebarMenuButton>
+                        <Button
+                            variant="ghost"
+                            className="w-full justify-start"
+                            onClick={() => setAuthModalOpen(true)}
+                        >
+                            <User className="size-4" />
+                            Войти
+                            <ChevronRight className="ml-auto size-4" />
+                        </Button>
                     </SidebarMenuItem>
                 </SidebarMenu>
                 <AuthModal open={authModalOpen} onOpenChange={setAuthModalOpen} />
