@@ -37,18 +37,20 @@ interface NavItem {
     disabled?: boolean;
 }
 
-const candidateNavItems: NavItem[] = [
-    { href: "/builder", label: "Мои навыки", icon: PenLine },
-    { href: "/messages", label: "Предложения", icon: MessageCircle, disabled: true },
+const searchNavItems: NavItem[] = [
+    { href: "/search", label: "Поиск", icon: Search },
+    { href: "/messages", label: "Чаты", icon: MessageCircle, disabled: true },
 ]
 
-const candidateToolsItems: NavItem[] = [
-    { href: "/impressions", label: "Показы", icon: Eye, disabled: true },
+const candidateNavItems: NavItem[] = [
+    { href: "/builder", label: "Навыки", icon: PenLine },
+    { href: "/impressions", label: "Аналитика", icon: Eye, disabled: true },
     { href: "/salaries", label: "Зарплаты", icon: Banknote, disabled: true },
 ]
 
+const candidateToolsItems: NavItem[] = []
+
 const recruiterNavItems: NavItem[] = [
-    { href: "/search", label: "Поиск", icon: Search },
     { href: "/messages", label: "Чат", icon: MessageCircle },
 ]
 
@@ -68,6 +70,27 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             </SidebarHeader>
             <SidebarContent>
                 <SidebarGroup>
+                    <SidebarGroupContent>
+                        <SidebarMenu>
+                            {searchNavItems.map((item) => (
+                                <SidebarMenuItem key={item.label}>
+                                    <SidebarMenuButton
+                                        asChild
+                                        isActive={pathname === item.href || pathname?.startsWith(item.href + "/")}
+                                        disabled={item.disabled}
+                                        tooltip={item.label}
+                                    >
+                                        <Link href={item.disabled ? "#" : item.href} className={item.disabled ? "pointer-events-none opacity-50" : ""}>
+                                            <item.icon />
+                                            <span>{item.label}</span>
+                                        </Link>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
+                            ))}
+                        </SidebarMenu>
+                    </SidebarGroupContent>
+                </SidebarGroup>
+                <SidebarGroup>
                     <SidebarGroupLabel>Платформа</SidebarGroupLabel>
                     <SidebarGroupContent>
                         <SidebarMenu>
@@ -75,7 +98,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                                 <SidebarMenuItem key={item.label}>
                                     <SidebarMenuButton
                                         asChild
-                                        isActive={!item.disabled && (pathname === item.href || pathname?.startsWith(item.href + "/"))}
+                                        isActive={pathname === item.href || pathname?.startsWith(item.href + "/")}
                                         disabled={item.disabled}
                                         tooltip={item.label}
                                     >

@@ -1,20 +1,126 @@
 import { create } from 'zustand';
 
-// Types
-export type TraitCategory = "skills" | "context" | "artifacts" | "attributes";
+// Types - STAR-Graph (Evidence-Based Competence Graph)
+
+// Node types organized by layers
+export type NodeType = 
+    | "ROLE" | "DOMAIN" | "SKILL"      // Layer 1: Assets (Что у меня есть)
+    | "CHALLENGE" | "ACTION"            // Layer 2: Actions (Что я делал)
+    | "METRIC" | "ARTIFACT"             // Layer 3: Impact (К чему это привело)
+    | "ATTRIBUTE";                      // Layer 4: Attributes (Какой я)
+
+// Edge types for STAR methodology
+export type EdgeType = 
+    | "SOLVED_WITH"    // CHALLENGE -> SKILL/ACTION (Как решена проблема)
+    | "USED"           // ACTION -> SKILL (Какие инструменты использованы)
+    | "IN_CONTEXT"     // ACTION/ARTIFACT -> DOMAIN (В какой сфере)
+    | "RESULTED_IN"    // ACTION -> METRIC/ARTIFACT (К чему привело)
+    | "DRIVER"         // ATTRIBUTE -> ACTION (Что помогло)
+    | "PERFORMED_AS";  // ACTION -> ROLE (В какой роли)
+
+// Legacy types for backward compatibility
+export type LegacyCategory = "skills" | "context" | "artifacts" | "attributes";
+export type LegacyEdgeType = "stack" | "in_domain" | "in_role" | "result" | "driver";
+
+// Evidence Level - уровень доказательности компетенции
+export type EvidenceLevel = 
+    | "theory"    // Теоретическая - навык упомянут без доказательств практики
+    | "practice"  // Практическая - есть доказательства применения
+    | "result";   // Результативная - есть измеримые достижения
 
 export interface TraitRelation {
     targetId: string;
-    type: "stack" | "in_domain" | "in_role" | "result" | "driver";
+    type: EdgeType | LegacyEdgeType;
 }
 
 export interface Trait {
     id: string;
     label: string;
-    description: string; // Short description, max 15 words
-    category: TraitCategory;
+    description: string; // Short description, max 40 words
+    type: NodeType | LegacyCategory; // New field, supports legacy categories
     importance: number; // 1 to 5, can be decimal (e.g., 4.3)
     relations: TraitRelation[];
+    evidenceLevel?: EvidenceLevel; // Уровень доказательности (опционально для обратной совместимости)
+}
+
+// Helper to get layer for a node type
+export function getNodeLayer(type: NodeType | LegacyCategory): number {
+    const layerMap: Record<string, number> = {
+        // Layer 1: Assets
+        ROLE: 1, DOMAIN: 1, SKILL: 1,
+        skills: 1, context: 1, // legacy mapping
+        // Layer 2: Actions
+        CHALLENGE: 2, ACTION: 2,
+        // Layer 3: Impact
+        METRIC: 3, ARTIFACT: 3,
+        artifacts: 3, // legacy mapping
+        // Layer 4: Attributes
+        ATTRIBUTE: 4,
+        attributes: 4, // legacy mapping
+    };
+    return layerMap[type] || 1;
+}
+
+// Helper to migrate legacy category to new NodeType
+export function migrateCategory(category: LegacyCategory | NodeType): NodeType {
+    const migrationMap: Record<string, NodeType> = {
+        skills: "SKILL",
+        context: "DOMAIN",
+        artifacts: "ARTIFACT",
+        attributes: "ATTRIBUTE",
+    };
+    return migrationMap[category] || (category as NodeType);
+}
+
+// Helper to migrate legacy edge type to new EdgeType
+export function migrateEdgeType(edgeType: LegacyEdgeType | EdgeType): EdgeType {
+    const migrationMap: Record<string, EdgeType> = {
+        stack: "USED",
+        in_domain: "IN_CONTEXT",
+        in_role: "PERFORMED_AS",
+        result: "RESULTED_IN",
+        driver: "DRIVER",
+    };
+    return migrationMap[edgeType] || (edgeType as EdgeType);
+}
+
+// Helper to check if a trait has legacy structure
+function isLegacyTrait(trait: any): boolean {
+    return trait.category !== undefined && trait.type === undefined;
+}
+
+// Helper to migrate a single trait from legacy to new format
+export function migrateTrait(trait: any): Trait {
+    // If trait has legacy 'category' field, migrate it
+    if (isLegacyTrait(trait)) {
+        return {
+            id: trait.id,
+            label: trait.label,
+            description: trait.description || "",
+            type: migrateCategory(trait.category),
+            importance: trait.importance || 3.0,
+            relations: (trait.relations || []).map((rel: any) => ({
+                targetId: rel.targetId,
+                type: migrateEdgeType(rel.type),
+            })),
+            evidenceLevel: trait.evidenceLevel || "theory", // Default for legacy
+        };
+    }
+    
+    // If trait already has new structure, just ensure relations are migrated
+    return {
+        ...trait,
+        relations: (trait.relations || []).map((rel: any) => ({
+            targetId: rel.targetId,
+            type: migrateEdgeType(rel.type),
+        })),
+        evidenceLevel: trait.evidenceLevel || "theory", // Default if not set
+    };
+}
+
+// Helper to migrate an array of traits
+export function migrateTraits(traits: any[]): Trait[] {
+    return traits.map(migrateTrait);
 }
 
 // Action types for AI responses
@@ -53,7 +159,7 @@ interface TraitsState {
     resetToSaved: () => void;
 
     // Get simplified context for AI (to save tokens)
-    getContextForAI: () => { id: string; label: string; category: TraitCategory }[];
+    getContextForAI: () => { id: string; label: string; type: NodeType | LegacyCategory }[];
 
     // Sync with database
     loadFromServer: () => Promise<void>;
@@ -64,6 +170,9 @@ interface TraitsState {
     externalHighlightMode: 'view' | 'delete';
     setExternalHighlightIds: (ids: string[], mode?: 'view' | 'delete') => void;
     deleteTraits: (ids: string[]) => void;
+
+    // Clear all data (for logout)
+    clearAll: () => void;
 }
 
 
@@ -231,7 +340,7 @@ export const useTraitsStore = create<TraitsState>((set, get) => ({
 
     getContextForAI: () => {
         const { traits } = get();
-        return traits.map(({ id, label, category }) => ({ id, label, category }));
+        return traits.map(({ id, label, type }) => ({ id, label, type }));
     },
 
     loadFromServer: async () => {
@@ -241,9 +350,11 @@ export const useTraitsStore = create<TraitsState>((set, get) => ({
             if (response.ok) {
                 const data = await response.json();
                 if (data.traits && Array.isArray(data.traits)) {
+                    // Migrate legacy traits to new STAR-Graph format
+                    const migratedTraits = migrateTraits(data.traits);
                     set({
-                        traits: data.traits,
-                        savedTraits: data.traits,
+                        traits: migratedTraits,
+                        savedTraits: migratedTraits,
                         history: [],
                         historyIndex: -1
                     });
@@ -286,7 +397,7 @@ export const useTraitsStore = create<TraitsState>((set, get) => ({
         set((state) => {
             // Find all traits to delete including the given ids and anything that depends on them?
             // For now, we only delete the specific traits requested (and their relations will be cleaned up by the delete logic)
-            // But wait, our 'delete' action in applyActions handles single ID. 
+            // But wait, our 'delete' action in applyActions handles single ID.
             // We need to batch delete.
 
             const idsToDelete = new Set(ids);
@@ -313,6 +424,19 @@ export const useTraitsStore = create<TraitsState>((set, get) => ({
                 historyIndex,
                 externalHighlightIds: [] // Clear highlights after delete
             };
+        });
+    },
+
+    clearAll: () => {
+        set({
+            traits: [],
+            savedTraits: [],
+            history: [],
+            historyIndex: -1,
+            isLoading: false,
+            isSyncing: false,
+            externalHighlightIds: [],
+            externalHighlightMode: 'view',
         });
     },
 }));

@@ -94,7 +94,7 @@ export function MarkdownText({ content, className }: MarkdownTextProps) {
                         return (
                             <h1
                                 key={line.key}
-                                className="text-2xl font-bold text-foreground mt-6 mb-2 first:mt-0 pb-2 border-b border-border/50"
+                                className="mt-6 first:mt-0 mb-2 pb-2 border-border/50 border-b font-bold text-foreground text-2xl"
                             >
                                 {renderInlineFormatting(line.content)}
                             </h1>
@@ -103,7 +103,7 @@ export function MarkdownText({ content, className }: MarkdownTextProps) {
                         return (
                             <h2
                                 key={line.key}
-                                className="text-xl font-semibold text-foreground mt-5 mb-1.5 first:mt-0"
+                                className="mt-5 first:mt-0 mb-1.5 font-semibold text-foreground text-xl"
                             >
                                 {renderInlineFormatting(line.content)}
                             </h2>
@@ -112,7 +112,7 @@ export function MarkdownText({ content, className }: MarkdownTextProps) {
                         return (
                             <h3
                                 key={line.key}
-                                className="text-lg font-semibold text-foreground mt-4 mb-1 first:mt-0"
+                                className="mt-4 first:mt-0 mb-1 font-semibold text-foreground text-lg"
                             >
                                 {renderInlineFormatting(line.content)}
                             </h3>
@@ -121,7 +121,7 @@ export function MarkdownText({ content, className }: MarkdownTextProps) {
                         return (
                             <h4
                                 key={line.key}
-                                className="text-base font-medium text-foreground/90 mt-3 mb-0.5 first:mt-0"
+                                className="mt-3 first:mt-0 mb-0.5 font-medium text-foreground/90 text-base"
                             >
                                 {renderInlineFormatting(line.content)}
                             </h4>
@@ -129,8 +129,8 @@ export function MarkdownText({ content, className }: MarkdownTextProps) {
                     case "bullet":
                         return (
                             <div key={line.key} className="flex items-start gap-2 pl-1">
-                                <span className="text-muted-foreground mt-1.5 w-1.5 h-1.5 rounded-full bg-muted-foreground/60 flex-shrink-0" />
-                                <p className="text-[15px] leading-relaxed text-foreground/90">
+                                <span className="bg-muted-foreground/60 mt-1.5 rounded-full w-1.5 h-1.5 text-muted-foreground shrink-0" />
+                                <p className="text-[15px] text-foreground/90 leading-relaxed">
                                     {renderInlineFormatting(line.content)}
                                 </p>
                             </div>
@@ -142,7 +142,7 @@ export function MarkdownText({ content, className }: MarkdownTextProps) {
                         return (
                             <p
                                 key={line.key}
-                                className="text-[15px] leading-relaxed text-foreground/90"
+                                className="text-[15px] text-foreground/90 leading-relaxed"
                             >
                                 {renderInlineFormatting(line.content)}
                             </p>

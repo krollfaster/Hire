@@ -10,6 +10,9 @@ interface SearchState {
     setQuery: (query: string) => void;
     search: (query: string) => Promise<void>;
     clearResults: () => void;
+
+    // Clear all data (for logout)
+    clearAll: () => void;
 }
 
 export const useSearchStore = create<SearchState>((set) => ({
@@ -51,4 +54,11 @@ export const useSearchStore = create<SearchState>((set) => ({
     },
 
     clearResults: () => set({ results: [], query: '', error: null }),
+
+    clearAll: () => set({
+        query: '',
+        results: [],
+        isSearching: false,
+        error: null,
+    }),
 }));

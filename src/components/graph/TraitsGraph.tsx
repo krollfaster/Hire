@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
-import { Trait, TraitCategory, useTraitsStore } from "@/stores/useTraitsStore";
+import { Trait, NodeType, LegacyCategory, EvidenceLevel, useTraitsStore, migrateCategory } from "@/stores/useTraitsStore";
 
 
 interface TraitsGraphProps {
@@ -12,9 +12,32 @@ interface TraitsGraphProps {
 interface GraphNode extends d3.SimulationNodeDatum {
     id: string;
     label: string;
-    category: TraitCategory;
+    type: NodeType | LegacyCategory;
     importance: number;
+    evidenceLevel: EvidenceLevel;
 }
+
+// Evidence level icons (Lucide icon paths at 24x24 viewBox)
+const evidenceIcons: Record<EvidenceLevel, { path: string; color: string; label: string }> = {
+    theory: {
+        // BookOpen icon
+        path: "M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z",
+        color: "#94a3b8", // slate-400
+        label: "Теория",
+    },
+    practice: {
+        // Wrench icon
+        path: "M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z",
+        color: "#3b82f6", // blue-500
+        label: "Практика",
+    },
+    result: {
+        // Trophy icon
+        path: "M6 9H4.5a2.5 2.5 0 0 1 0-5H6 M18 9h1.5a2.5 2.5 0 0 0 0-5H18 M4 22h16 M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22 M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22 M18 2H6v7a6 6 0 0 0 12 0V2Z",
+        color: "#22c55e", // green-500
+        label: "Результат",
+    },
+};
 
 interface GraphLink extends d3.SimulationLinkDatum<GraphNode> {
     source: string | GraphNode;
@@ -22,17 +45,42 @@ interface GraphLink extends d3.SimulationLinkDatum<GraphNode> {
     type: string;
 }
 
-const categoryColors: Record<TraitCategory, string> = {
-    skills: "#3b82f6",     // blue-500 (Компетенции)
-    context: "#a855f7",    // purple-500 (Контекст)
-    artifacts: "#22c55e",  // green-500 (Артефакты)
-    attributes: "#f59e0b", // amber-500 (Атрибуты)
+// STAR-Graph color palette organized by layers
+const nodeColors: Record<NodeType, string> = {
+    // Layer 1: Assets (синие оттенки)
+    ROLE: "#3b82f6",      // blue-500
+    DOMAIN: "#6366f1",    // indigo-500
+    SKILL: "#0ea5e9",     // sky-500
+    // Layer 2: Actions (оранжевые оттенки)
+    CHALLENGE: "#f97316", // orange-500
+    ACTION: "#fb923c",    // orange-400
+    // Layer 3: Impact (зелёные оттенки)
+    METRIC: "#22c55e",    // green-500
+    ARTIFACT: "#10b981",  // emerald-500
+    // Layer 4: Attributes (фиолетовые оттенки)
+    ATTRIBUTE: "#a855f7", // purple-500
 };
 
-const DEFAULT_COLOR = "#6b7280"; // gray-500 fallback для старых/неизвестных категорий
+// Legacy colors for backward compatibility
+const legacyColors: Record<LegacyCategory, string> = {
+    skills: "#0ea5e9",    // maps to SKILL
+    context: "#6366f1",   // maps to DOMAIN
+    artifacts: "#10b981", // maps to ARTIFACT
+    attributes: "#a855f7", // maps to ATTRIBUTE
+};
 
-function getNodeColor(category: TraitCategory): string {
-    return categoryColors[category] || DEFAULT_COLOR;
+const DEFAULT_COLOR = "#6b7280"; // gray-500 fallback
+
+function getNodeColor(type: NodeType | LegacyCategory): string {
+    // Try new NodeType colors first
+    if (type in nodeColors) {
+        return nodeColors[type as NodeType];
+    }
+    // Fallback to legacy colors
+    if (type in legacyColors) {
+        return legacyColors[type as LegacyCategory];
+    }
+    return DEFAULT_COLOR;
 }
 
 export function TraitsGraph({ traits }: TraitsGraphProps) {
@@ -71,8 +119,9 @@ export function TraitsGraph({ traits }: TraitsGraphProps) {
         const nodes: GraphNode[] = traits.map(trait => ({
             id: trait.id,
             label: trait.label,
-            category: trait.category,
+            type: trait.type,
             importance: trait.importance,
+            evidenceLevel: trait.evidenceLevel || "theory",
         }));
 
         // Create links from relations
@@ -164,9 +213,9 @@ export function TraitsGraph({ traits }: TraitsGraphProps) {
         // Draw node circles
         node.append("circle")
             .attr("r", d => getNodeRadius(d.importance))
-            .attr("fill", d => getNodeColor(d.category))
+            .attr("fill", d => getNodeColor(d.type))
             .attr("fill-opacity", 0.8)
-            .attr("stroke", d => getNodeColor(d.category))
+            .attr("stroke", d => getNodeColor(d.type))
             .attr("stroke-width", 2)
             .attr("stroke-opacity", 0.5)
             .style("filter", "url(#glow)");
@@ -184,8 +233,28 @@ export function TraitsGraph({ traits }: TraitsGraphProps) {
             .attr("opacity", 0)
             .style("pointer-events", "none");
 
-
-
+        // Draw evidence level icon (centered, scaled relative to node size)
+        node.append("path")
+            .attr("d", d => evidenceIcons[d.evidenceLevel].path)
+            .attr("transform", d => {
+                const radius = getNodeRadius(d.importance);
+                // Scale icon proportionally to node radius (base icon is 24x24)
+                // Smaller icons: divide by larger number
+                const scale = radius / 24;
+                const offset = 12 * scale; // Center the icon
+                return `translate(-${offset}, -${offset}) scale(${scale})`;
+            })
+            .attr("fill", "none")
+            .attr("stroke", "white")
+            .attr("stroke-width", d => {
+                const radius = getNodeRadius(d.importance);
+                // Thinner stroke for smaller nodes
+                return radius < 12 ? 2.5 : 2;
+            })
+            .attr("stroke-linecap", "round")
+            .attr("stroke-linejoin", "round")
+            .attr("class", "evidence-icon")
+            .style("pointer-events", "none");
 
 
 
@@ -224,6 +293,10 @@ export function TraitsGraph({ traits }: TraitsGraphProps) {
             node.select("text")
                 .attr("fill-opacity", n => connectedIds.has(n.id) ? 1 : 0.2);
 
+            // Hide evidence icons on non-connected nodes
+            node.select(".evidence-icon")
+                .attr("opacity", n => connectedIds.has(n.id) ? 1 : 0);
+
             // Highlight connected links
             link.attr("stroke-opacity", l => {
                 const sourceId = typeof l.source === "object" ? l.source.id : l.source;
@@ -244,6 +317,10 @@ export function TraitsGraph({ traits }: TraitsGraphProps) {
 
             node.select("text")
                 .attr("fill-opacity", 0.9);
+
+            // Reset evidence icons
+            node.select(".evidence-icon")
+                .attr("opacity", 1);
 
             link.attr("stroke-opacity", 0.2)
                 .attr("stroke-width", 1);
@@ -325,9 +402,9 @@ export function TraitsGraph({ traits }: TraitsGraphProps) {
             .attr("fill", (d: any) => {
                 if (highlightIds.has(d.id)) {
                     if (isDeleteMode) return "#ef4444"; // Red for delete
-                    return getNodeColor(d.category); // Category color for normal highlight
+                    return getNodeColor(d.type); // Type color for normal highlight
                 }
-                return getNodeColor(d.category);
+                return getNodeColor(d.type);
             })
             .attr("fill-opacity", (d: any) => {
                 if (highlightIds.size > 0) {
@@ -338,9 +415,9 @@ export function TraitsGraph({ traits }: TraitsGraphProps) {
             .attr("stroke", (d: any) => {
                 if (highlightIds.has(d.id)) {
                     if (isDeleteMode) return "#b91c1c"; // Dark red for delete
-                    return getNodeColor(d.category);
+                    return getNodeColor(d.type);
                 }
-                return getNodeColor(d.category);
+                return getNodeColor(d.type);
             })
             .attr("stroke-width", (d: any) => highlightIds.has(d.id) ? 3 : 2)
             .attr("stroke-opacity", (d: any) => {
@@ -353,6 +430,10 @@ export function TraitsGraph({ traits }: TraitsGraphProps) {
         // Toggle delete icon visibility
         node.select(".delete-icon")
             .attr("opacity", (d: any) => (highlightIds.has(d.id) && isDeleteMode) ? 1 : 0);
+
+        // Toggle evidence icon visibility (hide when delete icon is shown)
+        node.select(".evidence-icon")
+            .attr("opacity", (d: any) => (highlightIds.has(d.id) && isDeleteMode) ? 0 : 1);
 
         // Hide text if trash icon is visible to avoid clutter? Or keep it?
         // Let's hide text only for the deleted node when in delete mode for cleaner look.

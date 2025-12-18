@@ -7,6 +7,9 @@ interface RoleState {
     setRole: (role: UserRole) => void;
     isRecruiter: () => boolean;
     isCandidate: () => boolean;
+
+    // Clear all data (for logout)
+    clearAll: () => void;
 }
 
 export const useRoleStore = create<RoleState>((set, get) => ({
@@ -17,5 +20,9 @@ export const useRoleStore = create<RoleState>((set, get) => ({
     isRecruiter: () => get().role === 'recruiter',
 
     isCandidate: () => get().role === 'candidate',
+
+    clearAll: () => set({
+        role: 'candidate',
+    }),
 }));
 

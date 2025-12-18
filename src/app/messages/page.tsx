@@ -35,7 +35,7 @@ export default function MessagesPage() {
         <AppShell>
             <div className="flex w-full h-full overflow-hidden">
                 {/* Список чатов */}
-                <div className="w-[425px] min-w-[300px] flex-shrink-0">
+                <div className="w-[425px] min-w-[300px] shrink-0">
                     <ChatList
                         conversations={conversations}
                         activeId={activeConversationId}
@@ -44,7 +44,7 @@ export default function MessagesPage() {
                 </div>
 
                 {/* Область переписки */}
-                <div className="flex-1 min-w-0 w-full">
+                <div className="flex-1 w-full min-w-0">
                     <ChatWindow
                         conversation={activeConversation}
                         onSend={handleSend}

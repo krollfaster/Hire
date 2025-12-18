@@ -8,6 +8,9 @@ interface MessagesState {
     setActiveConversation: (id: string | null) => void;
     sendMessage: (conversationId: string, text: string) => void;
     markAsRead: (conversationId: string) => void;
+
+    // Clear all data (for logout)
+    clearAll: () => void;
 }
 
 export const useMessagesStore = create<MessagesState>((set) => ({
@@ -44,4 +47,9 @@ export const useMessagesStore = create<MessagesState>((set) => ({
                 conv.id === conversationId ? { ...conv, unread: 0 } : conv
             ),
         })),
+
+    clearAll: () => set({
+        conversations: [],
+        activeConversationId: null,
+    }),
 }));

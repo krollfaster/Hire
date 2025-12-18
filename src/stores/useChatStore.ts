@@ -17,6 +17,9 @@ interface ChatState {
     setMessages: (messages: ChatMessage[]) => void;
     addMessage: (message: ChatMessage) => void;
     reset: () => void;
+
+    // Clear all data (for logout)
+    clearAll: () => void;
 }
 
 export const useChatStore = create<ChatState>((set) => ({
@@ -35,5 +38,12 @@ export const useChatStore = create<ChatState>((set) => ({
 
     reset: () => {
         set({ messages: [] });
+    },
+
+    clearAll: () => {
+        set({
+            messages: [],
+            isLoading: false,
+        });
     },
 }));

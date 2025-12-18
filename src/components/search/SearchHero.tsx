@@ -28,7 +28,7 @@ export const SearchHero = ({ onSearch, isSearching, hasResults }: SearchHeroProp
     // Rotate placeholders
     useEffect(() => {
         if (query || isFocused) return;
-        
+
         const interval = setInterval(() => {
             setPlaceholderIndex((prev) => (prev + 1) % placeholderExamples.length);
         }, 3000);
@@ -57,7 +57,7 @@ export const SearchHero = ({ onSearch, isSearching, hasResults }: SearchHeroProp
             }}
             transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
             className={cn(
-                "flex flex-col items-center justify-center w-full",
+                "flex flex-col justify-center items-center w-full",
                 !hasResults && "min-h-[60vh]"
             )}
         >
@@ -67,23 +67,23 @@ export const SearchHero = ({ onSearch, isSearching, hasResults }: SearchHeroProp
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6 }}
-                    className="text-center mb-10"
+                    className="mb-10 text-center"
                 >
                     <motion.div
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ duration: 0.4 }}
-                        className="flex items-center justify-center gap-2 mb-4"
+                        className="flex justify-center items-center gap-2 mb-4"
                     >
-                        <div className="p-2 bg-primary/10 rounded-lg">
+                        <div className="bg-primary/10 p-2 rounded-lg">
                             <Sparkles className="w-6 h-6 text-primary" />
                         </div>
                     </motion.div>
-                    
-                    <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-foreground via-foreground to-muted-foreground bg-clip-text">
+
+                    <h1 className="bg-clip-text bg-linear-to-r from-foreground via-foreground to-muted-foreground mb-4 font-bold text-4xl md:text-5xl">
                         Найдите идеального кандидата
                     </h1>
-                    <p className="text-muted-foreground text-lg max-w-xl mx-auto">
+                    <p className="mx-auto w-full max-w-3xl text-muted-foreground text-xs text-center">
                         Опишите, кого вы ищете, и наш ИИ найдёт лучших кандидатов по смыслу, а не по ключевым словам
                     </p>
                 </motion.div>
@@ -107,7 +107,7 @@ export const SearchHero = ({ onSearch, isSearching, hasResults }: SearchHeroProp
                         scale: isFocused ? 1 : 0.95,
                     }}
                     transition={{ duration: 0.3 }}
-                    className="absolute -inset-1 bg-gradient-to-r from-primary/30 via-purple-500/30 to-pink-500/30 rounded-2xl blur-xl"
+                    className="absolute -inset-1 bg-linear-to-r from-primary/30 via-purple-500/30 to-pink-500/30 blur-xl rounded-2xl"
                 />
 
                 {/* Input container */}
@@ -120,7 +120,7 @@ export const SearchHero = ({ onSearch, isSearching, hasResults }: SearchHeroProp
                     )}
                 >
                     {/* Search icon */}
-                    <div className="pl-5 pr-2">
+                    <div className="pr-2 pl-5">
                         {isSearching ? (
                             <Loader2 className="w-6 h-6 text-primary animate-spin" />
                         ) : (
@@ -142,7 +142,7 @@ export const SearchHero = ({ onSearch, isSearching, hasResults }: SearchHeroProp
                         placeholder={placeholderExamples[placeholderIndex]}
                         disabled={isSearching}
                         className={cn(
-                            "flex-1 bg-transparent py-5 px-3 text-lg text-foreground placeholder:text-muted-foreground/60 focus:outline-none disabled:cursor-not-allowed",
+                            "flex-1 bg-transparent px-3 py-5 focus:outline-none text-foreground placeholder:text-muted-foreground/60 text-lg disabled:cursor-not-allowed",
                             hasResults && "py-4 text-base"
                         )}
                     />
@@ -155,7 +155,7 @@ export const SearchHero = ({ onSearch, isSearching, hasResults }: SearchHeroProp
                             exit={{ opacity: 0, scale: 0.8 }}
                             type="button"
                             onClick={handleClear}
-                            className="p-2 mr-2 rounded-full hover:bg-muted/50 transition-colors"
+                            className="hover:bg-muted/50 mr-2 p-2 rounded-full transition-colors"
                         >
                             <X className="w-5 h-5 text-muted-foreground" />
                         </motion.button>
@@ -186,33 +186,7 @@ export const SearchHero = ({ onSearch, isSearching, hasResults }: SearchHeroProp
                 </div>
             </motion.form>
 
-            {/* Suggestions - only show when no results and not focused */}
-            {!hasResults && !isFocused && !query && (
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.3 }}
-                    className="flex flex-wrap justify-center gap-2 mt-6"
-                >
-                    {["React Developer", "UX Designer", "Data Engineer", "Product Manager"].map((suggestion, i) => (
-                        <motion.button
-                            key={suggestion}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.4 + i * 0.1 }}
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => {
-                                setQuery(suggestion);
-                                inputRef.current?.focus();
-                            }}
-                            className="px-4 py-2 bg-card/50 border border-border/50 rounded-full text-sm text-muted-foreground hover:text-foreground hover:border-primary/30 transition-colors"
-                        >
-                            {suggestion}
-                        </motion.button>
-                    ))}
-                </motion.div>
-            )}
+
         </motion.div>
     );
 };

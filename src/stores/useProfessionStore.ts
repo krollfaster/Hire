@@ -38,6 +38,9 @@ interface ProfessionState {
     createProfession: (data: CreateProfessionData) => Promise<Profession | null>;
     switchProfession: (id: string) => Promise<void>;
     removeProfession: (id: string) => Promise<void>;
+
+    // Clear all data (for logout)
+    clearAll: () => void;
 }
 
 export const useProfessionStore = create<ProfessionState>((set, get) => ({
@@ -178,6 +181,16 @@ export const useProfessionStore = create<ProfessionState>((set, get) => ({
         } finally {
             set({ isSyncing: false });
         }
+    },
+
+    clearAll: () => {
+        set({
+            professions: [],
+            activeProfession: null,
+            isLoading: false,
+            isSyncing: false,
+            isSetupModalOpen: false,
+        });
     },
 }));
 

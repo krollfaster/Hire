@@ -19,6 +19,9 @@ interface UserState {
     removeSkill: (skillId: string) => void;
     updateStats: (stats: Partial<User['stats']>) => void;
     addActivity: (activity: Activity) => void;
+
+    // Clear all data (for logout)
+    clearAll: () => void;
 }
 
 const generateId = () => {
@@ -129,5 +132,10 @@ export const useUserStore = create<UserState>((set) => ({
                 ...state.user,
                 recentActivity: [activity, ...state.user.recentActivity].slice(0, 10),
             },
+        })),
+
+    clearAll: () =>
+        set(() => ({
+            user: emptyUser,
         })),
 }));

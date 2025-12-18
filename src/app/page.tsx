@@ -53,11 +53,11 @@ export default function LandingPage() {
       {/* Floating glows */}
       <motion.div
         style={{ y: glowParallax }}
-        className="pointer-events-none absolute -left-24 top-20 h-72 w-72 rounded-full bg-primary/20 blur-3xl"
+        className="top-20 -left-24 absolute bg-primary/20 blur-3xl rounded-full w-72 h-72 pointer-events-none"
       />
       <motion.div
         style={{ y: glowParallax }}
-        className="pointer-events-none absolute right-0 top-64 h-72 w-72 rounded-full bg-sky-400/20 blur-3xl"
+        className="top-64 right-0 absolute bg-sky-400/20 blur-3xl rounded-full w-72 h-72 pointer-events-none"
       />
 
       {/* Content */}
@@ -140,23 +140,23 @@ export default function LandingPage() {
 
       {/* Features Section */}
       <section className="relative bg-background py-24">
-        <div className="container mx-auto px-6">
+        <div className="mx-auto px-6 container">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
             viewport={{ once: true }}
-            className="text-center mb-16"
+            className="mb-16 text-center"
           >
-            <h2 className="font-bold text-4xl md:text-5xl mb-4">
+            <h2 className="mb-4 font-bold text-4xl md:text-5xl">
               Почему выбирают <span className="text-gradient">HireTalant</span>?
             </h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+            <p className="mx-auto max-w-2xl text-muted-foreground text-lg">
               Революционный подход к поиску талантов, который понимает не только слова, но и смысл
             </p>
           </motion.div>
 
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="gap-8 grid md:grid-cols-3">
             {[
               {
                 icon: Brain,
@@ -180,12 +180,12 @@ export default function LandingPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: i * 0.1 }}
                 viewport={{ once: true }}
-                className="group p-8 bg-card/50 backdrop-blur-sm border border-border rounded-xl hover:border-primary/50 transition-colors"
+                className="group bg-card/50 backdrop-blur-sm p-8 border border-border hover:border-primary/50 rounded-xl transition-colors"
               >
-                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-6 group-hover:bg-primary/20 transition-colors">
+                <div className="flex justify-center items-center bg-primary/10 group-hover:bg-primary/20 mb-6 rounded-lg w-12 h-12 transition-colors">
                   <feature.icon className="w-6 h-6 text-primary" />
                 </div>
-                <h3 className="font-semibold text-xl mb-3">{feature.title}</h3>
+                <h3 className="mb-3 font-semibold text-xl">{feature.title}</h3>
                 <p className="text-muted-foreground">{feature.description}</p>
               </motion.div>
             ))}
@@ -195,23 +195,23 @@ export default function LandingPage() {
 
       {/* How It Works Section */}
       <section className="relative bg-card/30 py-24">
-        <div className="container mx-auto px-6">
+        <div className="mx-auto px-6 container">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
             viewport={{ once: true }}
-            className="text-center mb-16"
+            className="mb-16 text-center"
           >
-            <h2 className="font-bold text-4xl md:text-5xl mb-4">
+            <h2 className="mb-4 font-bold text-4xl md:text-5xl">
               Как это работает?
             </h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+            <p className="mx-auto max-w-2xl text-muted-foreground text-lg">
               Простой процесс от рассказа истории до нахождения идеальной работы
             </p>
           </motion.div>
 
-          <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+          <div className="gap-8 grid md:grid-cols-3 mx-auto max-w-4xl">
             {[
               {
                 step: "1",
@@ -241,14 +241,14 @@ export default function LandingPage() {
                 className="text-center"
               >
                 <div className="relative mb-8">
-                  <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
+                  <div className="flex justify-center items-center bg-primary mx-auto mb-4 rounded-full w-16 h-16">
                     <step.icon className="w-8 h-8 text-primary-foreground" />
                   </div>
-                  <div className="absolute -top-2 -right-2 w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center">
-                    <span className="text-primary font-bold text-sm">{step.step}</span>
+                  <div className="-top-2 -right-2 absolute flex justify-center items-center bg-primary/20 rounded-full w-8 h-8">
+                    <span className="font-bold text-primary text-sm">{step.step}</span>
                   </div>
                 </div>
-                <h3 className="font-semibold text-xl mb-3">{step.title}</h3>
+                <h3 className="mb-3 font-semibold text-xl">{step.title}</h3>
                 <p className="text-muted-foreground">{step.description}</p>
               </motion.div>
             ))}
@@ -258,23 +258,23 @@ export default function LandingPage() {
 
       {/* Testimonials Section */}
       <section className="relative bg-background py-24">
-        <div className="container mx-auto px-6">
+        <div className="mx-auto px-6 container">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
             viewport={{ once: true }}
-            className="text-center mb-16"
+            className="mb-16 text-center"
           >
-            <h2 className="font-bold text-4xl md:text-5xl mb-4">
+            <h2 className="mb-4 font-bold text-4xl md:text-5xl">
               Что говорят о нас
             </h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+            <p className="mx-auto max-w-2xl text-muted-foreground text-lg">
               Компании уже используют HireTalant для поиска лучших талантов
             </p>
           </motion.div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="gap-8 grid md:grid-cols-2 lg:grid-cols-3">
             {[
               {
                 quote: "HireTalant революционизировал наш процесс найма. Мы нашли идеального CTO за неделю вместо месяцев поиска.",
@@ -301,14 +301,14 @@ export default function LandingPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: i * 0.1 }}
                 viewport={{ once: true }}
-                className="p-8 bg-card/50 backdrop-blur-sm border border-border rounded-xl"
+                className="bg-card/50 backdrop-blur-sm p-8 border border-border rounded-xl"
               >
                 <div className="flex mb-4">
                   {[...Array(5)].map((_, j) => (
-                    <CheckCircle key={j} className="w-5 h-5 text-primary fill-primary" />
+                    <CheckCircle key={j} className="fill-primary w-5 h-5 text-primary" />
                   ))}
                 </div>
-                <blockquote className="text-foreground mb-6 italic">
+                <blockquote className="mb-6 text-foreground italic">
                   &quot;{testimonial.quote}&quot;
                 </blockquote>
                 <div>
@@ -324,23 +324,23 @@ export default function LandingPage() {
 
       {/* FAQ Section */}
       <section className="relative bg-card/30 py-24">
-        <div className="container mx-auto px-6">
+        <div className="mx-auto px-6 container">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
             viewport={{ once: true }}
-            className="text-center mb-16"
+            className="mb-16 text-center"
           >
-            <h2 className="font-bold text-4xl md:text-5xl mb-4">
+            <h2 className="mb-4 font-bold text-4xl md:text-5xl">
               Часто задаваемые вопросы
             </h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+            <p className="mx-auto max-w-2xl text-muted-foreground text-lg">
               Ответы на самые популярные вопросы о платформе
             </p>
           </motion.div>
 
-          <div className="max-w-3xl mx-auto space-y-6">
+          <div className="space-y-6 mx-auto max-w-3xl">
             {[
               {
                 question: "Как HireTalant отличается от традиционных сайтов поиска работы?",
@@ -365,9 +365,9 @@ export default function LandingPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: i * 0.1 }}
                 viewport={{ once: true }}
-                className="p-8 bg-card/50 backdrop-blur-sm border border-border rounded-xl"
+                className="bg-card/50 backdrop-blur-sm p-8 border border-border rounded-xl"
               >
-                <h3 className="font-semibold text-lg mb-3">{faq.question}</h3>
+                <h3 className="mb-3 font-semibold text-lg">{faq.question}</h3>
                 <p className="text-muted-foreground">{faq.answer}</p>
               </motion.div>
             ))}
@@ -376,23 +376,23 @@ export default function LandingPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="relative bg-gradient-to-br from-primary/10 via-background to-primary/5 py-24">
-        <div className="container mx-auto px-6 text-center">
+      <section className="relative bg-linear-to-br from-primary/10 via-background to-primary/5 py-24">
+        <div className="mx-auto px-6 text-center container">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
             viewport={{ once: true }}
-            className="max-w-3xl mx-auto"
+            className="mx-auto max-w-3xl"
           >
-            <h2 className="font-bold text-4xl md:text-5xl mb-6">
+            <h2 className="mb-6 font-bold text-4xl md:text-5xl">
               Готовы найти свою идеальную команду?
             </h2>
-            <p className="text-muted-foreground text-lg mb-10">
+            <p className="mb-10 text-muted-foreground text-lg">
               Присоединяйтесь к тысячам профессионалов, которые уже нашли работу мечты с помощью ИИ
             </p>
 
-            <div className="flex sm:flex-row flex-col gap-4 justify-center">
+            <div className="flex sm:flex-row flex-col justify-center gap-4">
               <Button size="lg" className="gap-2 px-8 glow-primary" onClick={handleCandidateJoin}>
                 Создать профиль
                 <ArrowRight size={18} />
@@ -407,15 +407,15 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="relative bg-card/50 border-t border-border py-12">
-        <div className="container mx-auto px-6">
-          <div className="grid md:grid-cols-4 gap-8 mb-8">
+      <footer className="relative bg-card/50 py-12 border-border border-t">
+        <div className="mx-auto px-6 container">
+          <div className="gap-8 grid md:grid-cols-4 mb-8">
             <div className="md:col-span-2">
               <div className="flex items-center gap-2 mb-4">
                 <Sparkles className="w-8 h-8 text-primary" />
                 <span className="font-bold text-xl">HireTalant</span>
               </div>
-              <p className="text-muted-foreground mb-4 max-w-md">
+              <p className="mb-4 max-w-md text-muted-foreground">
                 Революционная платформа поиска талантов на основе искусственного интеллекта.
                 Поиск по смыслу, а не по ключевым словам.
               </p>
@@ -430,7 +430,7 @@ export default function LandingPage() {
             </div>
 
             <div>
-              <h4 className="font-semibold mb-4">Продукт</h4>
+              <h4 className="mb-4 font-semibold">Продукт</h4>
               <div className="space-y-2">
                 <Link href="#" className="block text-muted-foreground hover:text-primary transition-colors">Как это работает</Link>
                 <Link href="#" className="block text-muted-foreground hover:text-primary transition-colors">Для кандидатов</Link>
@@ -439,7 +439,7 @@ export default function LandingPage() {
             </div>
 
             <div>
-              <h4 className="font-semibold mb-4">Поддержка</h4>
+              <h4 className="mb-4 font-semibold">Поддержка</h4>
               <div className="space-y-2">
                 <Link href="#" className="block text-muted-foreground hover:text-primary transition-colors">FAQ</Link>
                 <Link href="#" className="block text-muted-foreground hover:text-primary transition-colors">Контакты</Link>
@@ -448,11 +448,11 @@ export default function LandingPage() {
             </div>
           </div>
 
-          <div className="border-t border-border pt-8 flex flex-col sm:flex-row justify-between items-center">
+          <div className="flex sm:flex-row flex-col justify-between items-center pt-8 border-border border-t">
             <p className="text-muted-foreground text-sm">
               © 2025 HireTalant. Все права защищены.
             </p>
-            <p className="text-muted-foreground text-sm mt-2 sm:mt-0">
+            <p className="mt-2 sm:mt-0 text-muted-foreground text-sm">
               Создано с ❤️ для лучших талантов мира
             </p>
           </div>

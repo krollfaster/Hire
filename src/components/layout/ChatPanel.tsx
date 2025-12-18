@@ -20,7 +20,7 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useTraitsStore, TraitAction, TraitCategory, Trait } from "@/stores/useTraitsStore";
+import { useTraitsStore, TraitAction, NodeType, LegacyCategory, Trait } from "@/stores/useTraitsStore";
 
 import { useChatStore } from "@/stores/useChatStore";
 import { useProfessionStore } from "@/stores/useProfessionStore";
@@ -75,35 +75,104 @@ const MODEL_OPTIONS: ModelOption[] = [
     },
 ];
 
-const categoryConfig: Record<TraitCategory, {
+// STAR-Graph node type configuration (8 types + legacy support)
+type NodeTypeOrLegacy = NodeType | LegacyCategory;
+
+const nodeTypeConfig: Record<NodeTypeOrLegacy, {
     label: string;
+    labelSingular: string;
     color: string;
     bgColor: string;
     borderColor: string;
 }> = {
-    skills: {
-        label: "Компетенции",
+    // Layer 1: Assets (синие оттенки)
+    ROLE: {
+        label: "Роли",
+        labelSingular: "Роль",
         color: "text-blue-500",
         bgColor: "bg-blue-500/10",
         borderColor: "border-blue-500/30",
     },
-    context: {
-        label: "Контекст",
-        color: "text-purple-500",
-        bgColor: "bg-purple-500/10",
-        borderColor: "border-purple-500/30",
+    DOMAIN: {
+        label: "Домены",
+        labelSingular: "Домен",
+        color: "text-indigo-500",
+        bgColor: "bg-indigo-500/10",
+        borderColor: "border-indigo-500/30",
     },
-    artifacts: {
-        label: "Артефакты",
+    SKILL: {
+        label: "Навыки",
+        labelSingular: "Навык",
+        color: "text-sky-500",
+        bgColor: "bg-sky-500/10",
+        borderColor: "border-sky-500/30",
+    },
+    // Layer 2: Actions (оранжевые оттенки)
+    CHALLENGE: {
+        label: "Вызовы",
+        labelSingular: "Вызов",
+        color: "text-orange-500",
+        bgColor: "bg-orange-500/10",
+        borderColor: "border-orange-500/30",
+    },
+    ACTION: {
+        label: "Действия",
+        labelSingular: "Действие",
+        color: "text-amber-500",
+        bgColor: "bg-amber-500/10",
+        borderColor: "border-amber-500/30",
+    },
+    // Layer 3: Impact (зелёные оттенки)
+    METRIC: {
+        label: "Метрики",
+        labelSingular: "Метрика",
         color: "text-green-500",
         bgColor: "bg-green-500/10",
         borderColor: "border-green-500/30",
     },
+    ARTIFACT: {
+        label: "Артефакты",
+        labelSingular: "Артефакт",
+        color: "text-emerald-500",
+        bgColor: "bg-emerald-500/10",
+        borderColor: "border-emerald-500/30",
+    },
+    // Layer 4: Attributes (фиолетовые оттенки)
+    ATTRIBUTE: {
+        label: "Атрибуты",
+        labelSingular: "Атрибут",
+        color: "text-purple-500",
+        bgColor: "bg-purple-500/10",
+        borderColor: "border-purple-500/30",
+    },
+    // Legacy categories for backward compatibility
+    skills: {
+        label: "Навыки",
+        labelSingular: "Навык",
+        color: "text-sky-500",
+        bgColor: "bg-sky-500/10",
+        borderColor: "border-sky-500/30",
+    },
+    context: {
+        label: "Контекст",
+        labelSingular: "Контекст",
+        color: "text-indigo-500",
+        bgColor: "bg-indigo-500/10",
+        borderColor: "border-indigo-500/30",
+    },
+    artifacts: {
+        label: "Артефакты",
+        labelSingular: "Артефакт",
+        color: "text-emerald-500",
+        bgColor: "bg-emerald-500/10",
+        borderColor: "border-emerald-500/30",
+    },
     attributes: {
         label: "Атрибуты",
-        color: "text-amber-500",
-        bgColor: "bg-amber-500/10",
-        borderColor: "border-amber-500/30",
+        labelSingular: "Атрибут",
+        color: "text-purple-500",
+        bgColor: "bg-purple-500/10",
+        borderColor: "border-purple-500/30",
     },
 };
 
@@ -433,28 +502,28 @@ export const ChatPanel = () => {
                                 if (message.role === "assistant" && validCreatedTraits.length > 0) {
                                     const counts = validCreatedTraits.reduce((acc, action) => {
                                         if (action.type === "create") {
-                                            const cat = action.data.category;
-                                            acc[cat] = (acc[cat] || 0) + 1;
+                                            const nodeType = action.data.type;
+                                            acc[nodeType] = (acc[nodeType] || 0) + 1;
                                         }
                                         return acc;
-                                    }, {} as Record<TraitCategory, number>);
+                                    }, {} as Record<NodeTypeOrLegacy, number>);
 
                                     content = (
                                         <div className="flex flex-wrap gap-2">
-                                            {Object.entries(counts).map(([cat, count]) => {
-                                                const category = cat as TraitCategory;
-                                                const config = categoryConfig[category];
+                                            {Object.entries(counts).map(([type, count]) => {
+                                                const nodeType = type as NodeTypeOrLegacy;
+                                                const config = nodeTypeConfig[nodeType];
                                                 if (!config) return null;
 
-                                                // Get IDs for this category in this message to pass to highlight/delete
+                                                // Get IDs for this type in this message to pass to highlight/delete
                                                 const traitIds = validCreatedTraits
-                                                    .filter(a => a.type === "create" && a.data?.category === category)
+                                                    .filter(a => a.type === "create" && a.data?.type === nodeType)
                                                     .map(a => (a as { type: "create"; data: Trait }).data.id);
 
 
                                                 return (
                                                     <Badge
-                                                        key={category}
+                                                        key={nodeType}
                                                         variant="outline"
                                                         className={cn(
                                                             "group/badge relative gap-1.5 py-1 pr-8 pl-3 overflow-hidden font-normal text-sm transition-all duration-300 cursor-default",
@@ -466,11 +535,7 @@ export const ChatPanel = () => {
                                                         onMouseLeave={() => setExternalHighlightIds([])}
                                                     >
                                                         <span className="font-bold">+{count}</span>
-                                                        {count === 1 && category === 'context' ? 'Контекст' : // Special case for singular
-                                                            count === 1 && category === 'skills' ? 'Компетенция' :
-                                                                count === 1 && category === 'artifacts' ? 'Артефакт' :
-                                                                    count === 1 && category === 'attributes' ? 'Атрибут' :
-                                                                        config.label}
+                                                        {count === 1 ? config.labelSingular : config.label}
 
                                                         {/* Close button always visible, minimal style */}
                                                         <button

@@ -1,101 +1,91 @@
 import { NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
+import { traitsToText, simpleTextMatch, Trait } from "@/lib/embeddings";
 
 const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 
-const SYSTEM_PROMPT = `Ты — ИИ-система поиска талантов. Твоя задача — генерировать релевантных кандидатов на основе поискового запроса рекрутера.
+// Системный промпт для ИИ-ранжирования кандидатов
+const RANKING_SYSTEM_PROMPT = `Ты — ИИ-система оценки соответствия кандидатов. Твоя задача — оценить насколько каждый кандидат подходит под поисковый запрос рекрутера.
 
 ВАЖНО: Ты ДОЛЖЕН отвечать ТОЛЬКО валидным JSON объектом. Никакого текста до или после JSON.
 
 ## Формат ответа
 
 {
-  "candidates": [
+  "rankings": [
     {
-      "id": "уникальный_id",
-      "name": "Имя Фамилия",
-      "role": "Должность",
-      "avatar": "номер_аватара",
-      "bio": "Краткое описание кандидата (1-2 предложения)",
-      "matchScore": число от 65 до 98,
-      "matchExplanation": "Почему этот кандидат подходит под запрос",
-      "skills": ["Навык 1", "Навык 2", "Навык 3"],
-      "experience": "X лет опыта",
-      "location": "Город, Страна"
+      "candidateId": "id кандидата из входных данных",
+      "matchScore": число от 0 до 100,
+      "matchExplanation": "Краткое объяснение (1-2 предложения) почему этот кандидат подходит или не подходит"
     }
   ]
 }
 
-## Правила генерации
+## Правила оценки
 
-1. Генерируй от 4 до 8 кандидатов в зависимости от специфичности запроса
-2. Имена должны быть русскими и реалистичными
-3. matchScore должен быть выше для более релевантных кандидатов
-4. Первые кандидаты должны быть наиболее релевантными (сортировка по matchScore)
-5. avatar — число от 1 до 8 (разные для разных кандидатов)
-6. Навыки должны быть релевантны роли и запросу
-7. matchExplanation должен объяснять, почему кандидат подходит под конкретный запрос
-8. Добавляй разнообразие: разный опыт, разные специализации внутри запрошенной области
+1. matchScore от 0 до 100:
+   - 90-100: Идеальное совпадение — все ключевые требования выполнены
+   - 70-89: Хорошее совпадение — большинство требований выполнено
+   - 50-69: Частичное совпадение — некоторые требования выполнены
+   - 30-49: Слабое совпадение — мало релевантного опыта
+   - 0-29: Не подходит — нет релевантного опыта
 
-## Примеры запросов и ответов
+2. Учитывай:
+   - Прямое совпадение навыков с требованиями
+   - Релевантность опыта работы
+   - Уровень (Junior/Middle/Senior/Lead) если указан
+   - Смежные навыки и технологии
 
-Запрос: "Senior React разработчик с опытом в финтехе"
+3. matchExplanation должен быть конкретным и указывать на конкретные навыки/опыт кандидата
 
-{
-  "candidates": [
-    {
-      "id": "c1",
-      "name": "Алексей Морозов",
-      "role": "Senior Frontend Developer",
-      "avatar": "1",
-      "bio": "Ведущий разработчик с 7-летним опытом в React. Строил платёжные системы в Тинькофф.",
-      "matchScore": 96,
-      "matchExplanation": "Глубокий опыт React и прямой опыт в финтехе — идеальное совпадение",
-      "skills": ["React", "TypeScript", "Redux", "Node.js", "Финтех"],
-      "experience": "7 лет",
-      "location": "Москва, Россия"
-    }
-  ]
+Помни: отвечай ТОЛЬКО JSON. Оценивай объективно на основе предоставленных данных.`;
+
+// Avatar URLs для кандидатов
+const AVATAR_URLS = [
+    "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
+    "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=face",
+    "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
+    "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&h=150&fit=crop&crop=face",
+    "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&h=150&fit=crop&crop=face",
+    "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&crop=face",
+    "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face",
+    "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face",
+];
+
+export interface SearchCandidate {
+    id: string;
+    name: string;
+    email: string;
+    avatar: string;
+    professionName: string;
+    grade: string;
+    matchScore: number;
+    matchExplanation: string;
+    profileContent: string;
 }
-
-Помни: отвечай ТОЛЬКО JSON. Генерируй реалистичных и разнообразных кандидатов.`;
-
-// Avatar URLs for generated candidates
-const AVATAR_URLS: Record<string, string> = {
-    "1": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
-    "2": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=face",
-    "3": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
-    "4": "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&h=150&fit=crop&crop=face",
-    "5": "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&h=150&fit=crop&crop=face",
-    "6": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&crop=face",
-    "7": "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face",
-    "8": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face",
-};
 
 export interface GeneratedCandidate {
     id: string;
     name: string;
     role: string;
-    avatar: string;
     bio: string;
+    avatar: string;
     matchScore: number;
     matchExplanation: string;
-    skills: string[];
     experience: string;
     location: string;
+    skills: string[];
+}
+
+interface RankingResult {
+    candidateId: string;
+    matchScore: number;
+    matchExplanation: string;
 }
 
 export async function POST(req: Request) {
     try {
         const { query } = await req.json();
-        const apiKey = process.env.OPENROUTER_API_KEY;
-
-        if (!apiKey) {
-            console.error("❌ OPENROUTER_API_KEY is missing in environment variables!");
-            return NextResponse.json(
-                { error: "API ключ не настроен. Пожалуйста, добавьте OPENROUTER_API_KEY в файл .env.local" },
-                { status: 500 }
-            );
-        }
 
         if (!query || query.trim().length === 0) {
             return NextResponse.json(
@@ -104,82 +94,174 @@ export async function POST(req: Request) {
             );
         }
 
+        // 1. Загружаем все активные профессии с графами
+        const professions = await prisma.profession.findMany({
+            where: {
+                isActive: true,
+                graph: {
+                    isNot: null,
+                },
+            },
+            include: {
+                user: true,
+                graph: true,
+            },
+        });
+
+        if (professions.length === 0) {
+            return NextResponse.json({
+                candidates: [],
+                message: "Нет кандидатов с заполненными профилями."
+            });
+        }
+
+        // 2. Формируем текстовое представление каждого профиля
+        const candidatesWithContent = professions.map((profession, index) => {
+            const traits = (profession.graph?.content as Trait[]) || [];
+            const profileText = traitsToText(traits, profession.name, profession.grade);
+            const textMatchScore = simpleTextMatch(query, profileText);
+
+            return {
+                id: profession.id,
+                userId: profession.userId,
+                name: profession.user?.name || "Пользователь",
+                email: profession.user?.email || "",
+                avatar: profession.user?.avatar || AVATAR_URLS[index % AVATAR_URLS.length],
+                professionName: profession.name,
+                grade: profession.grade,
+                profileContent: profileText,
+                textMatchScore,
+            };
+        });
+
+        // 3. Фильтруем по минимальному текстовому совпадению (если есть много кандидатов)
+        let filteredCandidates = candidatesWithContent;
+        if (candidatesWithContent.length > 20) {
+            // Берём топ-20 по текстовому совпадению
+            filteredCandidates = candidatesWithContent
+                .sort((a, b) => b.textMatchScore - a.textMatchScore)
+                .slice(0, 20);
+        }
+
+        if (filteredCandidates.length === 0) {
+            return NextResponse.json({
+                candidates: [],
+                message: "Кандидаты не найдены. Попробуйте изменить запрос."
+            });
+        }
+
+        // 4. Отправляем в ИИ для ранжирования
+        const rankings = await rankCandidatesWithAI(query, filteredCandidates);
+
+        // 5. Формируем финальный результат
+        const candidates: SearchCandidate[] = filteredCandidates
+            .map((candidate) => {
+                const ranking = rankings.find(r => r.candidateId === candidate.id);
+
+                return {
+                    id: candidate.id,
+                    name: candidate.name,
+                    email: candidate.email,
+                    avatar: candidate.avatar,
+                    professionName: candidate.professionName,
+                    grade: candidate.grade,
+                    matchScore: ranking?.matchScore ?? Math.round(candidate.textMatchScore * 50),
+                    matchExplanation: ranking?.matchExplanation || "Найден по ключевым словам",
+                    profileContent: candidate.profileContent,
+                };
+            })
+            .filter(c => c.matchScore > 20) // Убираем совсем нерелевантных
+            .sort((a, b) => b.matchScore - a.matchScore);
+
+        return NextResponse.json({ candidates });
+
+    } catch (error) {
+        console.error("Search error:", error);
+        return NextResponse.json(
+            { error: "Произошла ошибка при поиске кандидатов" },
+            { status: 500 }
+        );
+    }
+}
+
+/**
+ * Ранжирует кандидатов с помощью ИИ
+ */
+async function rankCandidatesWithAI(
+    query: string,
+    candidates: Array<{
+        id: string;
+        name: string;
+        professionName: string;
+        grade: string;
+        profileContent: string;
+        textMatchScore: number;
+    }>
+): Promise<RankingResult[]> {
+    const apiKey = process.env.OPENROUTER_API_KEY;
+
+    if (!apiKey) {
+        console.warn("OPENROUTER_API_KEY not set, using text match only");
+        return candidates.map(c => ({
+            candidateId: c.id,
+            matchScore: Math.round(c.textMatchScore * 70) + 20,
+            matchExplanation: "Оценка на основе ключевых слов",
+        }));
+    }
+
+    try {
+        // Формируем контекст для ИИ (ограничиваем размер)
+        const candidatesContext = candidates.map(c => ({
+            id: c.id,
+            name: c.name,
+            profession: `${c.professionName}${c.grade ? ` (${c.grade})` : ""}`,
+            profile: c.profileContent.slice(0, 500), // Ограничиваем размер
+        }));
+
+        const userMessage = `## Поисковый запрос рекрутера
+"${query}"
+
+## Найденные кандидаты
+${JSON.stringify(candidatesContext, null, 2)}
+
+Оцени каждого кандидата по шкале 0-100 и объясни почему.`;
+
         const response = await fetch(OPENROUTER_API_URL, {
             method: "POST",
             headers: {
                 "Authorization": `Bearer ${apiKey}`,
                 "Content-Type": "application/json",
                 "HTTP-Referer": process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
-                "X-Title": "Semantic Talent - Recruiter Search",
+                "X-Title": "Semantic Talent - Candidate Ranking",
             },
             body: JSON.stringify({
                 model: "google/gemini-2.0-flash-001",
                 messages: [
-                    {
-                        role: "system",
-                        content: SYSTEM_PROMPT
-                    },
-                    {
-                        role: "user",
-                        content: `Найди кандидатов по запросу: "${query}"`
-                    }
+                    { role: "system", content: RANKING_SYSTEM_PROMPT },
+                    { role: "user", content: userMessage }
                 ],
                 response_format: { type: "json_object" },
             }),
         });
 
         if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            console.error("OpenRouter API error:", errorData);
-            throw new Error(errorData.error?.message || `API error: ${response.status}`);
+            console.error("AI ranking failed:", await response.text());
+            throw new Error("AI ranking failed");
         }
 
         const data = await response.json();
         const rawContent = data.choices?.[0]?.message?.content || "{}";
 
-        // Parse and validate JSON response
-        let parsedResponse;
-        try {
-            parsedResponse = JSON.parse(rawContent);
-        } catch {
-            console.error("Failed to parse AI response as JSON:", rawContent);
-            return NextResponse.json({
-                candidates: [],
-                error: "Не удалось обработать ответ ИИ. Попробуйте переформулировать запрос."
-            }, { status: 500 });
-        }
+        const parsed = JSON.parse(rawContent);
+        return parsed.rankings || [];
 
-        // Process candidates and replace avatar numbers with actual URLs
-        const candidates: GeneratedCandidate[] = (parsedResponse.candidates || []).map(
-            (candidate: GeneratedCandidate & { avatar: string }, index: number) => ({
-                ...candidate,
-                id: candidate.id || `gen-${Date.now()}-${index}`,
-                avatar: AVATAR_URLS[candidate.avatar] || AVATAR_URLS[String((index % 8) + 1)],
-            })
-        );
-
-        return NextResponse.json({ candidates });
     } catch (error) {
-        console.error("Error communicating with OpenRouter API:", error);
-
-        let errorMessage = "Произошла ошибка при поиске кандидатов.";
-
-        if (error instanceof Error) {
-            const errorMsg = error.message.toLowerCase();
-
-            if (errorMsg.includes("api key") || errorMsg.includes("authentication") || errorMsg.includes("unauthorized")) {
-                errorMessage = "Неверный API ключ. Проверьте настройки в файле .env.local";
-            } else if (errorMsg.includes("quota") || errorMsg.includes("rate limit") || errorMsg.includes("credits")) {
-                errorMessage = "Превышен лимит запросов. Попробуйте позже.";
-            } else {
-                errorMessage = `Ошибка: ${error.message}`;
-            }
-        }
-
-        return NextResponse.json(
-            { error: errorMessage, candidates: [] },
-            { status: 500 }
-        );
+        console.error("AI ranking error:", error);
+        // Fallback: используем только текстовое совпадение
+        return candidates.map(c => ({
+            candidateId: c.id,
+            matchScore: Math.round(c.textMatchScore * 70) + 20,
+            matchExplanation: "Оценка на основе ключевых слов",
+        }));
     }
 }
-

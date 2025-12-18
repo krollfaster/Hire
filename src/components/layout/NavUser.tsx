@@ -37,6 +37,13 @@ import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { AuthModal } from "@/components/auth/AuthModal"
 import { signOut } from "@/app/actions/auth"
+import { useProfessionStore } from "@/stores/useProfessionStore"
+import { useTraitsStore } from "@/stores/useTraitsStore"
+import { useUserStore } from "@/stores/useUserStore"
+import { useSearchStore } from "@/stores/useSearchStore"
+import { useChatStore } from "@/stores/useChatStore"
+import { useMessagesStore } from "@/stores/useMessagesStore"
+import { useRoleStore } from "@/stores/useRoleStore"
 
 interface NavUserProps {
     user: {
@@ -53,6 +60,23 @@ export function NavUser({ user }: NavUserProps) {
     const [authModalOpen, setAuthModalOpen] = useState(false)
 
     const handleLogout = async () => {
+        // Clear all user data from stores before logout
+        const professionStore = useProfessionStore.getState()
+        const traitsStore = useTraitsStore.getState()
+        const userStore = useUserStore.getState()
+        const searchStore = useSearchStore.getState()
+        const chatStore = useChatStore.getState()
+        const messagesStore = useMessagesStore.getState()
+        const roleStore = useRoleStore.getState()
+
+        professionStore.clearAll()
+        traitsStore.clearAll()
+        userStore.clearAll()
+        searchStore.clearAll()
+        chatStore.clearAll()
+        messagesStore.clearAll()
+        roleStore.clearAll()
+
         await signOut()
     }
 

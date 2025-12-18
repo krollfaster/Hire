@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { AppShell, ChatPanel } from "@/components/layout";
-import { useTraitsStore, Trait, TraitCategory } from "@/stores/useTraitsStore";
+import { useTraitsStore, Trait, NodeType, LegacyCategory, EvidenceLevel } from "@/stores/useTraitsStore";
 import { useChatStore } from "@/stores/useChatStore";
 import { TraitsGraph } from "@/components/graph/TraitsGraph";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -20,20 +20,31 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { Star, Link2, LayoutGrid, GitBranch, ArrowRight, Trash2, Undo2, Redo2, Save, RotateCcw } from "lucide-react";
+import { Star, Link2, LayoutGrid, GitBranch, ArrowRight, Trash2, Undo2, Redo2, Save, RotateCcw, BookOpen, Wrench, Trophy, type LucideIcon } from "lucide-react";
 
-type FilterTab = "all" | TraitCategory;
+type NodeTypeOrLegacy = NodeType | LegacyCategory;
+type FilterTab = "all" | NodeTypeOrLegacy;
 type ViewMode = "cards" | "graph";
 
+// STAR-Graph filter tabs
 const tabs: { id: FilterTab; label: string }[] = [
     { id: "all", label: "Все" },
-    { id: "skills", label: "Компетенции" },
-    { id: "context", label: "Контекст" },
-    { id: "artifacts", label: "Артефакты" },
-    { id: "attributes", label: "Атрибуты" },
+    // Layer 1: Assets
+    { id: "SKILL", label: "Навыки" },
+    { id: "ROLE", label: "Роли" },
+    { id: "DOMAIN", label: "Домены" },
+    // Layer 2: Actions
+    { id: "CHALLENGE", label: "Вызовы" },
+    { id: "ACTION", label: "Действия" },
+    // Layer 3: Impact
+    { id: "METRIC", label: "Метрики" },
+    { id: "ARTIFACT", label: "Артефакты" },
+    // Layer 4: Attributes
+    { id: "ATTRIBUTE", label: "Атрибуты" },
 ];
 
-const categoryConfig: Record<TraitCategory, {
+// STAR-Graph node type configuration
+const nodeTypeConfig: Record<NodeTypeOrLegacy, {
     label: string;
     color: string;
     bgColor: string;
@@ -43,8 +54,9 @@ const categoryConfig: Record<TraitCategory, {
     badgeHoverColor: string;
     titleHoverColor: string;
 }> = {
-    skills: {
-        label: "Компетенция",
+    // Layer 1: Assets (синие оттенки)
+    ROLE: {
+        label: "Роль",
         color: "text-blue-500",
         bgColor: "bg-blue-500/10",
         borderColor: "border-blue-500/30",
@@ -53,18 +65,50 @@ const categoryConfig: Record<TraitCategory, {
         badgeHoverColor: "group-hover:text-blue-500 group-hover:border-blue-500/50",
         titleHoverColor: "group-hover:text-blue-500",
     },
-    context: {
-        label: "Контекст",
-        color: "text-purple-500",
-        bgColor: "bg-purple-500/10",
-        borderColor: "border-purple-500/30",
-        hoverBg: "hover:bg-purple-500/5",
-        hoverBorder: "hover:border-purple-500/30",
-        badgeHoverColor: "group-hover:text-purple-500 group-hover:border-purple-500/50",
-        titleHoverColor: "group-hover:text-purple-500",
+    DOMAIN: {
+        label: "Домен",
+        color: "text-indigo-500",
+        bgColor: "bg-indigo-500/10",
+        borderColor: "border-indigo-500/30",
+        hoverBg: "hover:bg-indigo-500/5",
+        hoverBorder: "hover:border-indigo-500/30",
+        badgeHoverColor: "group-hover:text-indigo-500 group-hover:border-indigo-500/50",
+        titleHoverColor: "group-hover:text-indigo-500",
     },
-    artifacts: {
-        label: "Артефакт",
+    SKILL: {
+        label: "Навык",
+        color: "text-sky-500",
+        bgColor: "bg-sky-500/10",
+        borderColor: "border-sky-500/30",
+        hoverBg: "hover:bg-sky-500/5",
+        hoverBorder: "hover:border-sky-500/30",
+        badgeHoverColor: "group-hover:text-sky-500 group-hover:border-sky-500/50",
+        titleHoverColor: "group-hover:text-sky-500",
+    },
+    // Layer 2: Actions (оранжевые оттенки)
+    CHALLENGE: {
+        label: "Вызов",
+        color: "text-orange-500",
+        bgColor: "bg-orange-500/10",
+        borderColor: "border-orange-500/30",
+        hoverBg: "hover:bg-orange-500/5",
+        hoverBorder: "hover:border-orange-500/30",
+        badgeHoverColor: "group-hover:text-orange-500 group-hover:border-orange-500/50",
+        titleHoverColor: "group-hover:text-orange-500",
+    },
+    ACTION: {
+        label: "Действие",
+        color: "text-amber-500",
+        bgColor: "bg-amber-500/10",
+        borderColor: "border-amber-500/30",
+        hoverBg: "hover:bg-amber-500/5",
+        hoverBorder: "hover:border-amber-500/30",
+        badgeHoverColor: "group-hover:text-amber-500 group-hover:border-amber-500/50",
+        titleHoverColor: "group-hover:text-amber-500",
+    },
+    // Layer 3: Impact (зелёные оттенки)
+    METRIC: {
+        label: "Метрика",
         color: "text-green-500",
         bgColor: "bg-green-500/10",
         borderColor: "border-green-500/30",
@@ -73,15 +117,94 @@ const categoryConfig: Record<TraitCategory, {
         badgeHoverColor: "group-hover:text-green-500 group-hover:border-green-500/50",
         titleHoverColor: "group-hover:text-green-500",
     },
+    ARTIFACT: {
+        label: "Артефакт",
+        color: "text-emerald-500",
+        bgColor: "bg-emerald-500/10",
+        borderColor: "border-emerald-500/30",
+        hoverBg: "hover:bg-emerald-500/5",
+        hoverBorder: "hover:border-emerald-500/30",
+        badgeHoverColor: "group-hover:text-emerald-500 group-hover:border-emerald-500/50",
+        titleHoverColor: "group-hover:text-emerald-500",
+    },
+    // Layer 4: Attributes (фиолетовые оттенки)
+    ATTRIBUTE: {
+        label: "Атрибут",
+        color: "text-purple-500",
+        bgColor: "bg-purple-500/10",
+        borderColor: "border-purple-500/30",
+        hoverBg: "hover:bg-purple-500/5",
+        hoverBorder: "hover:border-purple-500/30",
+        badgeHoverColor: "group-hover:text-purple-500 group-hover:border-purple-500/50",
+        titleHoverColor: "group-hover:text-purple-500",
+    },
+    // Legacy categories for backward compatibility
+    skills: {
+        label: "Навык",
+        color: "text-sky-500",
+        bgColor: "bg-sky-500/10",
+        borderColor: "border-sky-500/30",
+        hoverBg: "hover:bg-sky-500/5",
+        hoverBorder: "hover:border-sky-500/30",
+        badgeHoverColor: "group-hover:text-sky-500 group-hover:border-sky-500/50",
+        titleHoverColor: "group-hover:text-sky-500",
+    },
+    context: {
+        label: "Контекст",
+        color: "text-indigo-500",
+        bgColor: "bg-indigo-500/10",
+        borderColor: "border-indigo-500/30",
+        hoverBg: "hover:bg-indigo-500/5",
+        hoverBorder: "hover:border-indigo-500/30",
+        badgeHoverColor: "group-hover:text-indigo-500 group-hover:border-indigo-500/50",
+        titleHoverColor: "group-hover:text-indigo-500",
+    },
+    artifacts: {
+        label: "Артефакт",
+        color: "text-emerald-500",
+        bgColor: "bg-emerald-500/10",
+        borderColor: "border-emerald-500/30",
+        hoverBg: "hover:bg-emerald-500/5",
+        hoverBorder: "hover:border-emerald-500/30",
+        badgeHoverColor: "group-hover:text-emerald-500 group-hover:border-emerald-500/50",
+        titleHoverColor: "group-hover:text-emerald-500",
+    },
     attributes: {
         label: "Атрибут",
-        color: "text-amber-500",
-        bgColor: "bg-amber-500/10",
-        borderColor: "border-amber-500/30",
-        hoverBg: "hover:bg-amber-500/5",
-        hoverBorder: "hover:border-amber-500/30",
-        badgeHoverColor: "group-hover:text-amber-500 group-hover:border-amber-500/50",
-        titleHoverColor: "group-hover:text-amber-500",
+        color: "text-purple-500",
+        bgColor: "bg-purple-500/10",
+        borderColor: "border-purple-500/30",
+        hoverBg: "hover:bg-purple-500/5",
+        hoverBorder: "hover:border-purple-500/30",
+        badgeHoverColor: "group-hover:text-purple-500 group-hover:border-purple-500/50",
+        titleHoverColor: "group-hover:text-purple-500",
+    },
+};
+
+// Evidence level configuration
+const evidenceLevelConfig: Record<EvidenceLevel, {
+    icon: LucideIcon;
+    label: string;
+    color: string;
+    bgColor: string;
+}> = {
+    theory: {
+        icon: BookOpen,
+        label: "Теория",
+        color: "text-slate-400",
+        bgColor: "bg-slate-400/10",
+    },
+    practice: {
+        icon: Wrench,
+        label: "Практика",
+        color: "text-blue-500",
+        bgColor: "bg-blue-500/10",
+    },
+    result: {
+        icon: Trophy,
+        label: "Результат",
+        color: "text-green-500",
+        bgColor: "bg-green-500/10",
     },
 };
 
@@ -126,7 +249,7 @@ interface TraitCardProps {
 }
 
 function TraitCard({ trait, onClick, onHover, isHighlighted }: TraitCardProps) {
-    const config = categoryConfig[trait.category] || categoryConfig.skills;
+    const config = nodeTypeConfig[trait.type] || nodeTypeConfig.SKILL;
     const hasRelations = trait.relations && trait.relations.length > 0;
 
     return (
@@ -154,10 +277,8 @@ function TraitCard({ trait, onClick, onHover, isHighlighted }: TraitCardProps) {
                     // Highlighted state (related cards when another card is hovered)
                     isHighlighted && [
                         "shadow-lg -translate-y-1",
-                        trait.category === "skills" && "bg-blue-500/5 border-blue-500/30",
-                        trait.category === "context" && "bg-purple-500/5 border-purple-500/30",
-                        trait.category === "artifacts" && "bg-green-500/5 border-green-500/30",
-                        trait.category === "attributes" && "bg-amber-500/5 border-amber-500/30",
+                        config.bgColor,
+                        config.borderColor,
                     ]
                 )}
             >
@@ -194,7 +315,24 @@ function TraitCard({ trait, onClick, onHover, isHighlighted }: TraitCardProps) {
                 </div>
 
                 <div className="flex justify-between items-center mt-auto pt-2">
-                    <StarRating value={trait.importance} />
+                    <div className="flex items-center gap-2">
+                        <StarRating value={trait.importance} />
+                        {/* Evidence Level Icon */}
+                        {trait.evidenceLevel && (
+                            <div 
+                                className={cn(
+                                    "flex items-center justify-center rounded-full w-5 h-5 transition-colors",
+                                    evidenceLevelConfig[trait.evidenceLevel].bgColor
+                                )}
+                                title={evidenceLevelConfig[trait.evidenceLevel].label}
+                            >
+                                {(() => {
+                                    const EvidenceIcon = evidenceLevelConfig[trait.evidenceLevel].icon;
+                                    return <EvidenceIcon size={12} className={evidenceLevelConfig[trait.evidenceLevel].color} />;
+                                })()}
+                            </div>
+                        )}
+                    </div>
 
                     <div className="flex items-center gap-2">
                         {hasRelations && (
@@ -312,8 +450,16 @@ function TraitsGrid({ traits, onTraitClick }: { traits: Trait[]; onTraitClick: (
     );
 }
 
-// Relation type labels
+// STAR-Graph relation type labels (new + legacy)
 const relationTypeLabels: Record<string, string> = {
+    // New STAR-Graph edge types
+    SOLVED_WITH: "Решено с помощью",
+    USED: "Использовано",
+    IN_CONTEXT: "В контексте",
+    RESULTED_IN: "Привело к",
+    DRIVER: "Драйвер",
+    PERFORMED_AS: "В роли",
+    // Legacy edge types
     stack: "Стек",
     in_domain: "В сфере",
     in_role: "В роли",
@@ -334,7 +480,7 @@ function TraitDetailSheet({
 }) {
     if (!trait) return null;
 
-    const config = categoryConfig[trait.category] || categoryConfig.skills;
+    const config = nodeTypeConfig[trait.type] || nodeTypeConfig.SKILL;
     const importance = trait.importance ?? 0;
 
     // Get related traits details
@@ -344,6 +490,9 @@ function TraitDetailSheet({
             return relatedTrait ? { ...relatedTrait, relationType: relation.type } : null;
         })
         .filter(Boolean) as (Trait & { relationType: string })[];
+
+    const evidenceConfig = trait.evidenceLevel ? evidenceLevelConfig[trait.evidenceLevel] : null;
+    const EvidenceIcon = evidenceConfig?.icon;
 
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
@@ -360,6 +509,19 @@ function TraitDetailSheet({
                         >
                             {config.label}
                         </Badge>
+                        {evidenceConfig && EvidenceIcon && (
+                            <Badge
+                                variant="outline"
+                                className={cn(
+                                    "text-xs gap-1",
+                                    evidenceConfig.bgColor,
+                                    evidenceConfig.color
+                                )}
+                            >
+                                <EvidenceIcon size={12} />
+                                {evidenceConfig.label}
+                            </Badge>
+                        )}
                     </div>
                     <SheetTitle className="text-xl">{trait.label}</SheetTitle>
                     {trait.description && (
@@ -379,10 +541,7 @@ function TraitDetailSheet({
                                     <div
                                         className={cn(
                                             "rounded-full h-full transition-all duration-500",
-                                            trait.category === "skills" && "bg-blue-500",
-                                            trait.category === "context" && "bg-purple-500",
-                                            trait.category === "artifacts" && "bg-green-500",
-                                            trait.category === "attributes" && "bg-amber-500"
+                                            config.color.replace("text-", "bg-")
                                         )}
                                         style={{ width: `${(importance / 5) * 100}%` }}
                                     />
@@ -406,7 +565,7 @@ function TraitDetailSheet({
                             {relatedTraits.length > 0 ? (
                                 <div className="space-y-2">
                                     {relatedTraits.map((related) => {
-                                        const relatedConfig = categoryConfig[related.category] || categoryConfig.skills;
+                                        const relatedConfig = nodeTypeConfig[related.type] || nodeTypeConfig.SKILL;
                                         return (
                                             <div
                                                 key={related.id}
@@ -471,7 +630,7 @@ function TraitsPanel() {
     const [sheetOpen, setSheetOpen] = useState(false);
 
     const getFilteredTraits = (tabId: FilterTab) => {
-        const filtered = tabId === "all" ? traits : traits.filter(trait => trait.category === tabId);
+        const filtered = tabId === "all" ? traits : traits.filter(trait => trait.type === tabId);
         // Sort by importance (descending - highest importance first)
         return [...filtered].sort((a, b) => (b.importance ?? 0) - (a.importance ?? 0));
     };
