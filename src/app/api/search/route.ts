@@ -117,7 +117,9 @@ export async function POST(req: Request) {
 
         // 2. Формируем текстовое представление каждого профиля
         const candidatesWithContent = professions.map((profession, index) => {
-            const traits = (profession.graph?.content as Trait[]) || [];
+            const traits: Trait[] = Array.isArray(profession.graph?.content)
+                ? (profession.graph.content as unknown as Trait[])
+                : [];
             const profileText = traitsToText(traits, profession.name, profession.grade);
             const textMatchScore = simpleTextMatch(query, profileText);
 
