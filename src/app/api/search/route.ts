@@ -97,7 +97,7 @@ export async function POST(req: Request) {
         // 1. Загружаем все активные профессии с графами
         const professions = await prisma.profession.findMany({
             where: {
-                isActive: true, // Only show active professions
+
                 graph: {
                     isNot: null,
                 },
