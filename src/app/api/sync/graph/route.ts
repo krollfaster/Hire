@@ -15,14 +15,12 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        // Условие поиска: либо по переданному ID, либо по флагу isActive
-        const whereClause = professionId
-            ? { id: professionId, userId: user.id }
-            : { userId: user.id, isActive: true };
-
         // Получаем профессию с графом
         const profession = await prisma.profession.findFirst({
-            where: whereClause,
+            where: professionId
+                ? { id: professionId, userId: user.id }
+                : { userId: user.id },
+            orderBy: { createdAt: "desc" },
             include: {
                 graph: true,
             },
@@ -70,8 +68,8 @@ export async function POST(request: NextRequest) {
             const activeProfession = await prisma.profession.findFirst({
                 where: {
                     userId: user.id,
-                    isActive: true,
                 },
+                orderBy: { createdAt: "desc" },
             });
             targetProfessionId = activeProfession?.id;
         }
