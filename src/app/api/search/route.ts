@@ -97,13 +97,17 @@ export async function POST(req: Request) {
         // 1. Загружаем все активные профессии с графами
         const professions = await prisma.profession.findMany({
             where: {
-                isActive: true,
+                isActive: true, // Only show active professions
                 graph: {
                     isNot: null,
                 },
             },
             include: {
-                user: true,
+                user: {
+                    include: {
+                        profile: true,
+                    },
+                },
                 graph: true,
             },
         });
@@ -126,9 +130,9 @@ export async function POST(req: Request) {
             return {
                 id: profession.id,
                 userId: profession.userId,
-                name: profession.user?.name || "Пользователь",
+                name: profession.user?.profile?.fullName || "Пользователь",
                 email: profession.user?.email || "",
-                avatar: profession.user?.avatar || AVATAR_URLS[index % AVATAR_URLS.length],
+                avatar: profession.user?.profile?.avatarUrl || AVATAR_URLS[index % AVATAR_URLS.length],
                 professionName: profession.name,
                 grade: profession.grade,
                 profileContent: profileText,

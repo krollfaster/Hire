@@ -3,14 +3,14 @@ import { create } from 'zustand';
 // Types - STAR-Graph (Evidence-Based Competence Graph)
 
 // Node types organized by layers
-export type NodeType = 
+export type NodeType =
     | "ROLE" | "DOMAIN" | "SKILL"      // Layer 1: Assets (Что у меня есть)
     | "CHALLENGE" | "ACTION"            // Layer 2: Actions (Что я делал)
     | "METRIC" | "ARTIFACT"             // Layer 3: Impact (К чему это привело)
     | "ATTRIBUTE";                      // Layer 4: Attributes (Какой я)
 
 // Edge types for STAR methodology
-export type EdgeType = 
+export type EdgeType =
     | "SOLVED_WITH"    // CHALLENGE -> SKILL/ACTION (Как решена проблема)
     | "USED"           // ACTION -> SKILL (Какие инструменты использованы)
     | "IN_CONTEXT"     // ACTION/ARTIFACT -> DOMAIN (В какой сфере)
@@ -23,7 +23,7 @@ export type LegacyCategory = "skills" | "context" | "artifacts" | "attributes";
 export type LegacyEdgeType = "stack" | "in_domain" | "in_role" | "result" | "driver";
 
 // Evidence Level - уровень доказательности компетенции
-export type EvidenceLevel = 
+export type EvidenceLevel =
     | "theory"    // Теоретическая - навык упомянут без доказательств практики
     | "practice"  // Практическая - есть доказательства применения
     | "result";   // Результативная - есть измеримые достижения
@@ -106,7 +106,7 @@ export function migrateTrait(trait: any): Trait {
             evidenceLevel: trait.evidenceLevel || "theory", // Default for legacy
         };
     }
-    
+
     // If trait already has new structure, just ensure relations are migrated
     return {
         ...trait,
@@ -135,6 +135,8 @@ const MAX_HISTORY_SIZE = 50;
 interface TraitsState {
     traits: Trait[];           // Рабочее состояние
     savedTraits: Trait[];      // Сохранённое в БД состояние
+    traitsCache: Record<string, Trait[]>; // Кэш traits по professionId
+    currentProfessionId: string | null; // ID текущей профессии
     history: Trait[][];        // Стек истории для undo/redo
     historyIndex: number;      // Текущая позиция в истории (-1 = начало)
     isLoading: boolean;
@@ -162,7 +164,7 @@ interface TraitsState {
     getContextForAI: () => { id: string; label: string; type: NodeType | LegacyCategory }[];
 
     // Sync with database
-    loadFromServer: () => Promise<void>;
+    loadFromServer: (professionId?: string) => Promise<void>;
     saveToServer: () => Promise<void>;
 
     // External interaction
@@ -202,6 +204,8 @@ function traitsAreEqual(a: Trait[], b: Trait[]): boolean {
 export const useTraitsStore = create<TraitsState>((set, get) => ({
     traits: [],
     savedTraits: [],
+    traitsCache: {},
+    currentProfessionId: null,
     history: [],
     historyIndex: -1,
     isLoading: false,
@@ -343,21 +347,49 @@ export const useTraitsStore = create<TraitsState>((set, get) => ({
         return traits.map(({ id, label, type }) => ({ id, label, type }));
     },
 
-    loadFromServer: async () => {
+    loadFromServer: async (professionId?: string) => {
+        const { traitsCache, currentProfessionId } = get();
+        const targetProfessionId = professionId || 'default';
+
+        // Если данные уже в кэше - используем их мгновенно
+        if (traitsCache[targetProfessionId]) {
+            const cachedTraits = traitsCache[targetProfessionId];
+            set({
+                traits: cachedTraits,
+                savedTraits: cachedTraits,
+                currentProfessionId: targetProfessionId,
+                history: [],
+                historyIndex: -1,
+                isLoading: false
+            });
+            return;
+        }
+
         set({ isLoading: true });
         try {
-            const response = await fetch("/api/sync/graph");
+            const url = professionId
+                ? `/api/sync/graph?professionId=${professionId}`
+                : "/api/sync/graph";
+
+            const response = await fetch(url);
             if (response.ok) {
                 const data = await response.json();
                 if (data.traits && Array.isArray(data.traits)) {
                     // Migrate legacy traits to new STAR-Graph format
                     const migratedTraits = migrateTraits(data.traits);
-                    set({
+
+                    // Обновляем кэш и состояние
+                    set((state) => ({
                         traits: migratedTraits,
                         savedTraits: migratedTraits,
+                        currentProfessionId: targetProfessionId,
+                        traitsCache: {
+                            ...state.traitsCache,
+                            [targetProfessionId]: migratedTraits
+                        },
                         history: [],
                         historyIndex: -1
-                    });
+                    }));
                 }
             }
         } catch (error) {
@@ -368,7 +400,7 @@ export const useTraitsStore = create<TraitsState>((set, get) => ({
     },
 
     saveToServer: async () => {
-        const { traits } = get();
+        const { traits, currentProfessionId } = get();
         set({ isSyncing: true });
         try {
             await fetch("/api/sync/graph", {
@@ -376,12 +408,15 @@ export const useTraitsStore = create<TraitsState>((set, get) => ({
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ traits }),
             });
-            // После успешного сохранения обновляем savedTraits и очищаем историю
-            set({
+            // После успешного сохранения обновляем savedTraits, кэш и очищаем историю
+            set((state) => ({
                 savedTraits: traits,
+                traitsCache: currentProfessionId
+                    ? { ...state.traitsCache, [currentProfessionId]: traits }
+                    : state.traitsCache,
                 history: [],
                 historyIndex: -1
-            });
+            }));
         } catch (error) {
             console.error("Failed to save traits to server:", error);
         } finally {
@@ -431,6 +466,8 @@ export const useTraitsStore = create<TraitsState>((set, get) => ({
         set({
             traits: [],
             savedTraits: [],
+            traitsCache: {},
+            currentProfessionId: null,
             history: [],
             historyIndex: -1,
             isLoading: false,

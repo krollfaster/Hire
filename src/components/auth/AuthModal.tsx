@@ -20,13 +20,16 @@ interface AuthModalProps {
   onOpenChange: (open: boolean) => void;
   defaultTab?: "signin" | "signup";
   closable?: boolean;
+  /** Куда редиректить после успешного входа */
+  redirectTo?: string;
 }
 
 export function AuthModal({
   open,
   onOpenChange,
   defaultTab = "signin",
-  closable = true
+  closable = true,
+  redirectTo = "/builder"
 }: AuthModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -65,7 +68,8 @@ export function AuthModal({
         setError(result.error);
       } else {
         onOpenChange(false);
-        window.location.reload();
+        // Используем полную перезагрузку чтобы обновить сессию
+        window.location.href = redirectTo;
       }
     } catch {
       setError("Произошла ошибка при входе");

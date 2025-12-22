@@ -1,11 +1,18 @@
 import { create } from "zustand";
 
+export type ProfessionStatus = "active_search" | "considering" | "not_searching";
+
 export interface Profession {
     id: string;
     name: string;
     grade: string;
     salaryMin: number | null;
     salaryMax: number | null;
+    status: ProfessionStatus | null;
+    employmentType: string | null;
+    workFormat: string | null;
+    travelTime: string | null;
+    businessTrips: boolean | null;
     isActive: boolean;
     createdAt: string;
     updatedAt: string;
@@ -16,6 +23,11 @@ export interface CreateProfessionData {
     grade: string;
     salaryMin?: number | null;
     salaryMax?: number | null;
+    status?: ProfessionStatus | null;
+    employmentType?: string | null;
+    workFormat?: string | null;
+    travelTime?: string | null;
+    businessTrips?: boolean | null;
 }
 
 interface ProfessionState {
@@ -23,7 +35,10 @@ interface ProfessionState {
     activeProfession: Profession | null;
     isLoading: boolean;
     isSyncing: boolean;
+    isSwitching: boolean; // Флаг переключения профессии
     isSetupModalOpen: boolean;
+    /** Флаг завершения начальной загрузки */
+    hasInitialized: boolean;
 
     // Actions
     setProfessions: (professions: Profession[]) => void;
@@ -36,7 +51,9 @@ interface ProfessionState {
     // Server sync
     loadFromServer: () => Promise<void>;
     createProfession: (data: CreateProfessionData) => Promise<Profession | null>;
-    switchProfession: (id: string) => Promise<void>;
+    editProfession: (id: string, data: Partial<CreateProfessionData>) => Promise<Profession | null>;
+    switchProfession: (id: string, skipLoading?: boolean) => Promise<void>;
+    setSwitching: (value: boolean) => void;
     removeProfession: (id: string) => Promise<void>;
 
     // Clear all data (for logout)
@@ -48,7 +65,9 @@ export const useProfessionStore = create<ProfessionState>((set, get) => ({
     activeProfession: null,
     isLoading: false,
     isSyncing: false,
+    isSwitching: false,
     isSetupModalOpen: false,
+    hasInitialized: false,
 
     setProfessions: (professions) => {
         const active = professions.find(p => p.isActive) || professions[0] || null;
@@ -106,7 +125,7 @@ export const useProfessionStore = create<ProfessionState>((set, get) => ({
         } catch (error) {
             console.error("Failed to load professions from server:", error);
         } finally {
-            set({ isLoading: false });
+            set({ isLoading: false, hasInitialized: true });
         }
     },
 
@@ -141,29 +160,72 @@ export const useProfessionStore = create<ProfessionState>((set, get) => ({
         }
     },
 
-    switchProfession: async (id) => {
+    editProfession: async (id, data) => {
         set({ isSyncing: true });
+        try {
+            const response = await fetch(`/api/professions/${id}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data),
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                const updatedProfession = result.profession;
+
+                // Обновляем локальное состояние
+                get().updateProfession(id, updatedProfession);
+
+                return updatedProfession;
+            }
+            return null;
+        } catch (error) {
+            console.error("Failed to edit profession:", error);
+            return null;
+        } finally {
+            set({ isSyncing: false });
+        }
+    },
+
+    switchProfession: async (id, skipLoading = false) => {
+        // Оптимистичное обновление: сначала меняем локально
+        const previousProfessions = get().professions;
+        const previousActive = get().activeProfession;
+
+        set((state) => {
+            const professions = state.professions.map(p => ({
+                ...p,
+                isActive: p.id === id,
+            }));
+            const activeProfession = professions.find(p => p.id === id) || null;
+            // Если skipLoading - не показываем loading state (данные из кэша)
+            return {
+                professions,
+                activeProfession,
+                isSyncing: true,
+                isSwitching: skipLoading ? false : true
+            };
+        });
+
         try {
             const response = await fetch(`/api/professions/${id}/activate`, {
                 method: "POST",
             });
 
-            if (response.ok) {
-                // Обновляем локальное состояние
-                set((state) => {
-                    const professions = state.professions.map(p => ({
-                        ...p,
-                        isActive: p.id === id,
-                    }));
-                    const activeProfession = professions.find(p => p.id === id) || null;
-                    return { professions, activeProfession };
-                });
+            if (!response.ok) {
+                throw new Error("Failed to switch profession");
             }
         } catch (error) {
             console.error("Failed to switch profession:", error);
+            // Откат при ошибке
+            set({ professions: previousProfessions, activeProfession: previousActive });
         } finally {
-            set({ isSyncing: false });
+            set({ isSyncing: false, isSwitching: false });
         }
+    },
+
+    setSwitching: (value: boolean) => {
+        set({ isSwitching: value });
     },
 
     removeProfession: async (id) => {
@@ -189,7 +251,9 @@ export const useProfessionStore = create<ProfessionState>((set, get) => ({
             activeProfession: null,
             isLoading: false,
             isSyncing: false,
+            isSwitching: false,
             isSetupModalOpen: false,
+            hasInitialized: false,
         });
     },
 }));

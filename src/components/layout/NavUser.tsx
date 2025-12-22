@@ -1,7 +1,7 @@
 "use client"
 
 import {
-    BadgeCheck,
+    ArrowLeftRight,
     Bell,
     ChevronRight,
     ChevronsUpDown,
@@ -35,6 +35,7 @@ import {
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
+import { UserSettingsModal } from "@/components/user/UserSettingsModal"
 import { AuthModal } from "@/components/auth/AuthModal"
 import { signOut } from "@/app/actions/auth"
 import { useProfessionStore } from "@/stores/useProfessionStore"
@@ -58,6 +59,8 @@ export function NavUser({ user }: NavUserProps) {
     const router = useRouter()
     const supabase = createClient()
     const [authModalOpen, setAuthModalOpen] = useState(false)
+    const [settingsModalOpen, setSettingsModalOpen] = useState(false)
+    const { role, setRole } = useRoleStore()
 
     const handleLogout = async () => {
         // Clear all user data from stores before logout
@@ -110,33 +113,15 @@ export function NavUser({ user }: NavUserProps) {
     }
 
     return (
-        <SidebarMenu>
-            <SidebarMenuItem>
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <SidebarMenuButton
-                            size="lg"
-                            className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-                        >
-                            <Avatar className="rounded-lg w-8 h-8">
-                                <AvatarImage src={user.avatar} alt={user.name} />
-                                <AvatarFallback className="rounded-lg">{getInitials(user.name)}</AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1 grid text-sm text-left leading-tight">
-                                <span className="font-semibold truncate">{user.name}</span>
-                                <span className="text-xs truncate">{user.email}</span>
-                            </div>
-                            <ChevronsUpDown className="ml-auto size-4" />
-                        </SidebarMenuButton>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent
-                        className="rounded-lg w-[--radix-dropdown-menu-trigger-width] min-w-56"
-                        side={isMobile ? "bottom" : "right"}
-                        align="end"
-                        sideOffset={4}
-                    >
-                        <DropdownMenuLabel className="p-0 font-normal">
-                            <div className="flex items-center gap-2 px-1 py-1.5 text-sm text-left">
+        <>
+            <SidebarMenu>
+                <SidebarMenuItem>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <SidebarMenuButton
+                                size="lg"
+                                className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                            >
                                 <Avatar className="rounded-lg w-8 h-8">
                                     <AvatarImage src={user.avatar} alt={user.name} />
                                     <AvatarFallback className="rounded-lg">{getInitials(user.name)}</AvatarFallback>
@@ -145,38 +130,65 @@ export function NavUser({ user }: NavUserProps) {
                                     <span className="font-semibold truncate">{user.name}</span>
                                     <span className="text-xs truncate">{user.email}</span>
                                 </div>
-                            </div>
-                        </DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuGroup>
-                            <DropdownMenuItem disabled>
-                                <BadgeCheck className="mr-2 size-4" />
-                                Аккаунт
-                            </DropdownMenuItem>
-                            <DropdownMenuItem disabled>
-                                <CreditCard className="mr-2 size-4" />
-                                Тарифы
-                            </DropdownMenuItem>
-                            <DropdownMenuItem disabled>
-                                <Bell className="mr-2 size-4" />
-                                Настройки
-                            </DropdownMenuItem>
+                                <ChevronsUpDown className="ml-auto size-4" />
+                            </SidebarMenuButton>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent
+                            className="rounded-lg w-[--radix-dropdown-menu-trigger-width] min-w-56"
+                            side={isMobile ? "bottom" : "right"}
+                            align="end"
+                            sideOffset={4}
+                        >
+                            <DropdownMenuLabel className="p-0 font-normal">
+                                <div className="flex items-center gap-2 px-1 py-1.5 text-sm text-left">
+                                    <Avatar className="rounded-lg w-8 h-8">
+                                        <AvatarImage src={user.avatar} alt={user.name} />
+                                        <AvatarFallback className="rounded-lg">{getInitials(user.name)}</AvatarFallback>
+                                    </Avatar>
+                                    <div className="flex-1 grid text-sm text-left leading-tight">
+                                        <span className="font-semibold truncate">{user.name}</span>
+                                        <span className="text-xs truncate">{user.email}</span>
+                                    </div>
+                                </div>
+                            </DropdownMenuLabel>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem asChild>
-                                <a href="/">
-                                    <Sparkles className="mr-2 size-4" />
-                                    Главная
-                                </a>
+                            <DropdownMenuGroup>
+                                <DropdownMenuItem onClick={() => {
+                                    setRole(role === 'candidate' ? 'recruiter' : 'candidate')
+                                }}>
+                                    <ArrowLeftRight className="mr-2 size-4" />
+                                    {role === 'candidate' ? 'Переключить на Ресерчер' : 'Переключить на Кандидата'}
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setSettingsModalOpen(true)}>
+                                    <User className="mr-2 size-4" />
+                                    Аккаунт
+                                </DropdownMenuItem>
+                                <DropdownMenuItem disabled>
+                                    <CreditCard className="mr-2 size-4" />
+                                    Тарифы
+                                </DropdownMenuItem>
+                                <DropdownMenuItem disabled>
+                                    <Bell className="mr-2 size-4" />
+                                    Настройки
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem asChild>
+                                    <a href="/">
+                                        <Sparkles className="mr-2 size-4" />
+                                        Главная
+                                    </a>
+                                </DropdownMenuItem>
+                            </DropdownMenuGroup>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={handleLogout}>
+                                <LogOut className="mr-2 size-4" />
+                                Выйти
                             </DropdownMenuItem>
-                        </DropdownMenuGroup>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={handleLogout}>
-                            <LogOut className="mr-2 size-4" />
-                            Выйти
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            </SidebarMenuItem>
-        </SidebarMenu>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </SidebarMenuItem>
+            </SidebarMenu>
+            <UserSettingsModal open={settingsModalOpen} onOpenChange={setSettingsModalOpen} />
+        </>
     )
 }

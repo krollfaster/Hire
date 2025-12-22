@@ -6,7 +6,7 @@ export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
   const next = requestUrl.searchParams.get("next") ?? "/builder";
-  
+
   // Используем NEXT_PUBLIC_SITE_URL для production, иначе origin из запроса
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || requestUrl.origin;
 
@@ -17,36 +17,40 @@ export async function GET(request: Request) {
   if (code) {
     const supabase = await createClient();
     const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-    
+
     console.log("[Auth Callback] exchangeCodeForSession error:", error?.message);
     console.log("[Auth Callback] user:", data?.user?.id);
-    
+
     if (!error && data.user) {
       // Создаем или обновляем пользователя в нашей БД
       try {
-        const existingUser = await prisma.user.findUnique({
-          where: { id: data.user.id },
-        });
+        const name = data.user.user_metadata?.full_name || data.user.user_metadata?.name || null;
+        const avatar = data.user.user_metadata?.avatar_url || data.user.user_metadata?.picture || null;
 
-        if (!existingUser) {
-          await prisma.user.create({
-            data: {
-              id: data.user.id,
-              email: data.user.email!,
-              name: data.user.user_metadata?.full_name || data.user.user_metadata?.name || null,
-              avatar: data.user.user_metadata?.avatar_url || data.user.user_metadata?.picture || null,
-            },
-          });
-        } else {
-          // Обновляем данные профиля при каждом входе
-          await prisma.user.update({
-            where: { id: data.user.id },
-            data: {
-              name: data.user.user_metadata?.full_name || data.user.user_metadata?.name || existingUser.name,
-              avatar: data.user.user_metadata?.avatar_url || data.user.user_metadata?.picture || existingUser.avatar,
-            },
-          });
+        // Разбиваем имя на firstName и lastName
+        let firstName: string | null = null;
+        let lastName: string | null = null;
+        if (name) {
+          const nameParts = name.split(' ');
+          firstName = nameParts[0] || null;
+          lastName = nameParts.slice(1).join(' ') || null;
         }
+
+        await prisma.user.upsert({
+          where: { id: data.user.id },
+          create: {
+            id: data.user.id,
+            email: data.user.email!,
+            firstName,
+            lastName,
+            avatarUrl: avatar,
+          },
+          update: {
+            firstName: firstName || undefined,
+            lastName: lastName || undefined,
+            avatarUrl: avatar || undefined,
+          },
+        });
       } catch (dbError) {
         console.error("[Auth Callback] Error syncing user to database:", dbError);
       }
@@ -55,7 +59,7 @@ export async function GET(request: Request) {
       console.log("[Auth Callback] Redirecting to:", redirectUrl);
       return NextResponse.redirect(redirectUrl);
     }
-    
+
     // Если была ошибка при обмене кода
     if (error) {
       console.error("[Auth Callback] Auth error:", error.message);

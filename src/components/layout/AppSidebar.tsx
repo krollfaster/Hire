@@ -5,8 +5,6 @@ import {
     PenLine,
     MessageCircle,
     Search,
-    Eye,
-    Banknote,
 } from "lucide-react"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
@@ -24,11 +22,15 @@ import {
     SidebarMenuItem,
     SidebarRail,
 } from "@/components/ui/sidebar"
+import { Skeleton } from "@/components/ui/skeleton"
 import { UserButton } from "@/components/auth"
 import { useRoleStore } from "@/stores/useRoleStore"
-import { useAuth } from "@/hooks/useAuth"
+import { useProfessionStore } from "@/stores/useProfessionStore"
+import { useTraitsStore } from "@/stores/useTraitsStore"
+import { useProfile } from "@/hooks/useProfile"
 import { NavUser } from "./NavUser"
 import { TeamSwitcher } from "./TeamSwitcher"
+import { ResearcherSwitcher } from "./ResearcherSwitcher"
 
 interface NavItem {
     href: string;
@@ -37,81 +39,112 @@ interface NavItem {
     disabled?: boolean;
 }
 
-const searchNavItems: NavItem[] = [
-    { href: "/search", label: "Поиск", icon: Search },
+// Для кандидата - Чаты и Навыки
+const candidateSearchItems: NavItem[] = [
     { href: "/messages", label: "Чаты", icon: MessageCircle, disabled: true },
+    { href: "/builder", label: "Навыки", icon: PenLine },
 ]
 
-const candidateNavItems: NavItem[] = [
-    { href: "/builder", label: "Навыки", icon: PenLine },
-    { href: "/impressions", label: "Аналитика", icon: Eye, disabled: true },
-    { href: "/salaries", label: "Зарплаты", icon: Banknote, disabled: true },
+// Для ресерчера - Поиск и Чат
+const recruiterSearchItems: NavItem[] = [
+    { href: "/search", label: "Поиск", icon: Search },
+    { href: "/messages", label: "Чат", icon: MessageCircle },
 ]
+
+const candidateNavItems: NavItem[] = []
+
+const analyticsNavItems: NavItem[] = []
 
 const candidateToolsItems: NavItem[] = []
 
-const recruiterNavItems: NavItem[] = [
-    { href: "/messages", label: "Чат", icon: MessageCircle },
-]
+const recruiterNavItems: NavItem[] = []
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     const pathname = usePathname()
 
     const { role } = useRoleStore()
-    const { user } = useAuth()
+    const { displayName, avatarUrl, email, user } = useProfile()
+    const isSwitching = useProfessionStore((state) => state.isSwitching)
+    const isTraitsLoading = useTraitsStore((state) => state.isLoading)
 
+    // Показываем skeleton только для кандидата при переключении профессии
+    const showMenuSkeleton = role !== 'recruiter' && (isSwitching || isTraitsLoading)
+
+    const searchItems = role === 'recruiter' ? recruiterSearchItems : candidateSearchItems
     const platformItems = role === 'recruiter' ? recruiterNavItems : candidateNavItems
     const toolsItems = role === 'recruiter' ? [] : candidateToolsItems
+
+    // Компонент skeleton для пунктов меню
+    const MenuSkeleton = () => (
+        <SidebarMenu>
+            {[1, 2].map((i) => (
+                <SidebarMenuItem key={i}>
+                    <SidebarMenuButton disabled>
+                        <Skeleton className="rounded size-4" />
+                        <Skeleton className="w-20 h-4" />
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+            ))}
+        </SidebarMenu>
+    )
 
     return (
         <Sidebar collapsible="icon" {...props}>
             <SidebarHeader>
-                <TeamSwitcher />
+                {role === 'recruiter' ? <ResearcherSwitcher /> : <TeamSwitcher />}
             </SidebarHeader>
             <SidebarContent>
                 <SidebarGroup>
                     <SidebarGroupContent>
-                        <SidebarMenu>
-                            {searchNavItems.map((item) => (
-                                <SidebarMenuItem key={item.label}>
-                                    <SidebarMenuButton
-                                        asChild
-                                        isActive={pathname === item.href || pathname?.startsWith(item.href + "/")}
-                                        disabled={item.disabled}
-                                        tooltip={item.label}
-                                    >
-                                        <Link href={item.disabled ? "#" : item.href} className={item.disabled ? "pointer-events-none opacity-50" : ""}>
-                                            <item.icon />
-                                            <span>{item.label}</span>
-                                        </Link>
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
-                            ))}
-                        </SidebarMenu>
+                        {showMenuSkeleton ? (
+                            <MenuSkeleton />
+                        ) : (
+                            <SidebarMenu>
+                                {searchItems.map((item) => (
+                                    <SidebarMenuItem key={item.label}>
+                                        <SidebarMenuButton
+                                            asChild
+                                            isActive={pathname === item.href || pathname?.startsWith(item.href + "/")}
+                                            disabled={item.disabled}
+                                            tooltip={item.label}
+                                        >
+                                            <Link href={item.disabled ? "#" : item.href} className={item.disabled ? "pointer-events-none opacity-50" : ""}>
+                                                <item.icon />
+                                                <span>{item.label}</span>
+                                            </Link>
+                                        </SidebarMenuButton>
+                                    </SidebarMenuItem>
+                                ))}
+                            </SidebarMenu>
+                        )}
                     </SidebarGroupContent>
                 </SidebarGroup>
-                <SidebarGroup>
-                    <SidebarGroupLabel>Платформа</SidebarGroupLabel>
-                    <SidebarGroupContent>
-                        <SidebarMenu>
-                            {platformItems.map((item) => (
-                                <SidebarMenuItem key={item.label}>
-                                    <SidebarMenuButton
-                                        asChild
-                                        isActive={pathname === item.href || pathname?.startsWith(item.href + "/")}
-                                        disabled={item.disabled}
-                                        tooltip={item.label}
-                                    >
-                                        <Link href={item.disabled ? "#" : item.href} className={item.disabled ? "pointer-events-none opacity-50" : ""}>
-                                            <item.icon />
-                                            <span>{item.label}</span>
-                                        </Link>
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
-                            ))}
-                        </SidebarMenu>
-                    </SidebarGroupContent>
-                </SidebarGroup>
+
+                {role !== 'recruiter' && platformItems.length > 0 && (
+                    <SidebarGroup>
+                        <SidebarGroupLabel>Резюме</SidebarGroupLabel>
+                        <SidebarGroupContent>
+                            <SidebarMenu>
+                                {platformItems.map((item) => (
+                                    <SidebarMenuItem key={item.label}>
+                                        <SidebarMenuButton
+                                            asChild
+                                            isActive={pathname === item.href || pathname?.startsWith(item.href + "/")}
+                                            disabled={item.disabled}
+                                            tooltip={item.label}
+                                        >
+                                            <Link href={item.disabled ? "#" : item.href} className={item.disabled ? "pointer-events-none opacity-50" : ""}>
+                                                <item.icon />
+                                                <span>{item.label}</span>
+                                            </Link>
+                                        </SidebarMenuButton>
+                                    </SidebarMenuItem>
+                                ))}
+                            </SidebarMenu>
+                        </SidebarGroupContent>
+                    </SidebarGroup>
+                )}
+
 
                 {toolsItems.length > 0 && (
                     <SidebarGroup>
@@ -140,9 +173,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             </SidebarContent>
             <SidebarFooter>
                 <NavUser user={user ? {
-                    name: user.user_metadata?.full_name || user.user_metadata?.name || user.email,
-                    email: user.email || "",
-                    avatar: user.user_metadata?.avatar_url || user.user_metadata?.picture || ""
+                    name: displayName,
+                    email: email,
+                    avatar: avatarUrl
                 } : null} />
             </SidebarFooter>
             <SidebarRail />

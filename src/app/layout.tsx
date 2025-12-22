@@ -3,6 +3,7 @@ import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { DataSyncProvider } from "@/components/providers/DataSyncProvider";
 import { AuthGuard } from "@/components/auth/AuthGuard";
+import { ProfessionGuard } from "@/components/auth/ProfessionGuard";
 
 const inter = Inter({
   variable: "--font-geist-sans",
@@ -33,6 +34,7 @@ export default function RootLayout({
         <DataSyncProvider>
           {children}
           <AuthGuard />
+          <ProfessionGuard />
         </DataSyncProvider>
       </body>
     </html>

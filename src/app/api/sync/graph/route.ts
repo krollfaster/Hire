@@ -3,8 +3,11 @@ import { createClient } from "@/lib/supabase/server";
 import prisma from "@/lib/prisma";
 
 // GET - загрузить карточки активной профессии пользователя
-export async function GET() {
+export async function GET(request: NextRequest) {
     try {
+        const { searchParams } = new URL(request.url);
+        const professionId = searchParams.get("professionId");
+
         const supabase = await createClient();
         const { data: { user } } = await supabase.auth.getUser();
 
@@ -12,12 +15,14 @@ export async function GET() {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        // Получаем активную профессию с графом
+        // Условие поиска: либо по переданному ID, либо по флагу isActive
+        const whereClause = professionId
+            ? { id: professionId, userId: user.id }
+            : { userId: user.id, isActive: true };
+
+        // Получаем профессию с графом
         const profession = await prisma.profession.findFirst({
-            where: { 
-                userId: user.id,
-                isActive: true,
-            },
+            where: whereClause,
             include: {
                 graph: true,
             },
@@ -60,10 +65,10 @@ export async function POST(request: NextRequest) {
 
         // Если professionId не передан - ищем активную профессию
         let targetProfessionId = professionId;
-        
+
         if (!targetProfessionId) {
             const activeProfession = await prisma.profession.findFirst({
-                where: { 
+                where: {
                     userId: user.id,
                     isActive: true,
                 },
@@ -80,7 +85,7 @@ export async function POST(request: NextRequest) {
 
         // Проверяем что профессия принадлежит пользователю
         const profession = await prisma.profession.findFirst({
-            where: { 
+            where: {
                 id: targetProfessionId,
                 userId: user.id,
             },

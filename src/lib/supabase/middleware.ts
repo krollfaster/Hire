@@ -38,18 +38,20 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   // Защита роутов - если пользователь не авторизован и пытается зайти на защищенные страницы
-  const protectedRoutes = ["/builder", "/messages"];
-  const isProtectedRoute = protectedRoutes.some((route) =>
-    request.nextUrl.pathname.startsWith(route)
+  const pathname = request.nextUrl.pathname;
+
+  // Публичные роуты - доступны без авторизации
+  const publicRoutes = ["/", "/auth"];
+  const isPublicRoute = publicRoutes.some((route) =>
+    pathname === route || pathname.startsWith("/auth/")
   );
 
-  // Для защищенных роутов без авторизации - редирект на главную
-  // Закомментировано для более мягкого подхода - авторизация будет запрашиваться при действии
-  // if (isProtectedRoute && !user) {
-  //   const url = request.nextUrl.clone();
-  //   url.pathname = "/";
-  //   return NextResponse.redirect(url);
-  // }
+  // Для всех защищенных роутов без авторизации - редирект на главную
+  if (!isPublicRoute && !user) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/";
+    return NextResponse.redirect(url);
+  }
 
   // IMPORTANT: You *must* return the supabaseResponse object as it is. If you're
   // creating a new response object with NextResponse.next() make sure to:

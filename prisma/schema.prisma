@@ -13,12 +13,14 @@ datasource db {
 model User {
   id        String   @id @default(uuid())
   email     String   @unique
-  name      String?
-  avatar    String?
+  firstName String?  // Имя
+  lastName  String?  // Фамилия
+  avatarUrl String?  // URL аватара
   role      Role     @default(CANDIDATE)
   createdAt DateTime @default(now())
 
   professions Profession[]
+  searches    ResearcherSearch[]
 }
 
 enum Role {
@@ -33,6 +35,13 @@ model Profession {
   grade     String   // "Junior", "Middle", "Senior", "Lead", "Manager"
   salaryMin Int?     // Минимальная ЗП
   salaryMax Int?     // Максимальная ЗП
+  status    String?  // "active_search" | "considering" | "not_searching"
+  
+  // New fields for extended flow
+  employmentType String? // Полная, частичная, проект
+  workFormat     String? // Офис, удалёнка, гибрид
+  travelTime     String? // Время до работы
+  businessTrips  Boolean? // Готовность к командировкам
   isActive  Boolean  @default(false) // Активная профессия
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -52,3 +61,18 @@ model Graph {
 
   profession Profession @relation(fields: [professionId], references: [id], onDelete: Cascade)
 }
+
+model ResearcherSearch {
+  id        String   @id @default(uuid())
+  userId    String
+  query     String   // Текст поискового запроса
+  name      String?  // Название поиска
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+

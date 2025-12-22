@@ -40,7 +40,17 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const { name, grade, salaryMin, salaryMax } = await request.json();
+        const {
+            name,
+            grade,
+            salaryMin,
+            salaryMax,
+            status,
+            employmentType,
+            workFormat,
+            travelTime,
+            businessTrips
+        } = await request.json();
 
         if (!name || !grade) {
             return NextResponse.json(
@@ -83,6 +93,11 @@ export async function POST(request: NextRequest) {
                 grade,
                 salaryMin: salaryMin || null,
                 salaryMax: salaryMax || null,
+                status: status || null,
+                employmentType: employmentType || null,
+                workFormat: workFormat || null,
+                travelTime: travelTime || null,
+                businessTrips: businessTrips !== undefined ? businessTrips : null,
                 isActive,
                 graph: {
                     create: {

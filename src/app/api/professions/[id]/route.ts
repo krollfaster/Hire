@@ -17,7 +17,7 @@ export async function GET(
         }
 
         const profession = await prisma.profession.findFirst({
-            where: { 
+            where: {
                 id,
                 userId: user.id,
             },
@@ -54,10 +54,20 @@ export async function PATCH(
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const { name, grade, salaryMin, salaryMax } = await request.json();
+        const {
+            name,
+            grade,
+            salaryMin,
+            salaryMax,
+            status,
+            employmentType,
+            workFormat,
+            travelTime,
+            businessTrips
+        } = await request.json();
 
         const profession = await prisma.profession.updateMany({
-            where: { 
+            where: {
                 id,
                 userId: user.id,
             },
@@ -66,6 +76,11 @@ export async function PATCH(
                 ...(grade !== undefined && { grade }),
                 ...(salaryMin !== undefined && { salaryMin }),
                 ...(salaryMax !== undefined && { salaryMax }),
+                ...(status !== undefined && { status }),
+                ...(employmentType !== undefined && { employmentType }),
+                ...(workFormat !== undefined && { workFormat }),
+                ...(travelTime !== undefined && { travelTime }),
+                ...(businessTrips !== undefined && { businessTrips }),
             },
         });
 
@@ -104,7 +119,7 @@ export async function DELETE(
 
         // Проверяем что профессия принадлежит пользователю
         const profession = await prisma.profession.findFirst({
-            where: { 
+            where: {
                 id,
                 userId: user.id,
             },

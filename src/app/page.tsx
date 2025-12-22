@@ -2,16 +2,22 @@
 
 import { motion, useScroll, useTransform } from "framer-motion";
 import Link from "next/link";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Sparkles, Brain, Search, Users, Zap, CheckCircle, MessageSquare, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRoleStore } from "@/stores/useRoleStore";
+import { useAuth } from "@/hooks/useAuth";
+import { AuthModal } from "@/components/auth/AuthModal";
 
 export default function LandingPage() {
   const pageRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const { setRole } = useRoleStore();
+  const { isAuthenticated, isLoading } = useAuth();
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [pendingAction, setPendingAction] = useState<'candidate' | 'recruiter' | null>(null);
+
   const { scrollYProgress } = useScroll({
     target: pageRef,
     offset: ["start start", "end start"],
@@ -22,13 +28,23 @@ export default function LandingPage() {
   const glowParallax = useTransform(scrollYProgress, [0, 1], [0, -200]);
 
   const handleRecruiterDemo = () => {
-    setRole('recruiter');
-    router.push('/search');
+    if (isAuthenticated) {
+      setRole('recruiter');
+      router.push('/search');
+    } else {
+      setPendingAction('recruiter');
+      setAuthModalOpen(true);
+    }
   };
 
   const handleCandidateJoin = () => {
-    setRole('candidate');
-    router.push('/builder');
+    if (isAuthenticated) {
+      setRole('candidate');
+      router.push('/builder');
+    } else {
+      setPendingAction('candidate');
+      setAuthModalOpen(true);
+    }
   };
 
   return (
@@ -134,6 +150,9 @@ export default function LandingPage() {
           ))}
         </motion.div>
       </div>
+
+      {/* Auth Modal */}
+      <AuthModal open={authModalOpen} onOpenChange={setAuthModalOpen} />
 
       {/* Bottom gradient */}
       <div className="right-0 bottom-0 left-0 absolute bg-linear-to-t from-background to-transparent h-32" />
