@@ -9,6 +9,7 @@ import {
     User,
 } from "lucide-react"
 import Link from "next/link"
+import { useRouter, usePathname } from "next/navigation"
 
 import {
     Avatar,
@@ -55,6 +56,8 @@ interface NavUserProps {
 
 export function NavUser({ user, isLoading }: NavUserProps) {
     const { isMobile } = useSidebar()
+    const router = useRouter()
+    const pathname = usePathname()
     const [authModalOpen, setAuthModalOpen] = useState(false)
     const { role, setRole } = useRoleStore()
 
@@ -184,7 +187,26 @@ export function NavUser({ user, isLoading }: NavUserProps) {
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem onClick={() => {
-                                    setRole(role === 'candidate' ? 'recruiter' : 'candidate')
+                                    const newRole = role === 'candidate' ? 'recruiter' : 'candidate'
+                                    setRole(newRole)
+
+                                    if (newRole === 'recruiter') {
+                                        // Если мы в чатах, остаемся там. 
+                                        // Иначе идем в поиск (стандартное поведение, включая переход со страницы навыков)
+                                        if (pathname.includes('/messages')) {
+                                            router.push('/messages')
+                                        } else {
+                                            router.push('/search')
+                                        }
+                                    } else {
+                                        // Если мы в чатах, остаемся там.
+                                        // Иначе идем в навыки (стандартное поведение, включая переход со страницы поиска)
+                                        if (pathname.includes('/messages')) {
+                                            router.push('/messages')
+                                        } else {
+                                            router.push('/builder')
+                                        }
+                                    }
                                 }}>
                                     <ArrowLeftRight className="mr-2 size-4" />
                                     {role === 'candidate' ? 'Переключить на Ресерчер' : 'Переключить на Кандидата'}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { AppShell } from "@/components/layout";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -8,6 +9,8 @@ import { Loader2, Mic, ArrowUp, User, Sparkles, SlidersHorizontal } from "lucide
 import { cn } from "@/lib/utils";
 import { CandidateCard, CandidateSkeleton, SearchFiltersSidebar, ActiveFiltersBadge } from "@/components/search";
 import type { SearchCandidate } from "@/app/api/search/route";
+import { useMessagesStore } from "@/stores/useMessagesStore";
+import { useResearcherSearchStore } from "@/stores/useResearcherSearchStore";
 
 interface SearchFilters {
     matchScore: number[];
@@ -16,6 +19,8 @@ interface SearchFilters {
 }
 
 export default function SearchPage() {
+    const router = useRouter();
+    const { createChat } = useMessagesStore();
     const [searchPrompt, setSearchPrompt] = useState("");
     const [candidates, setCandidates] = useState<SearchCandidate[]>([]);
     const [isSearching, setIsSearching] = useState(false);
@@ -102,6 +107,21 @@ export default function SearchPage() {
         setError(null);
         setSearchPrompt("");
     };
+
+    const isResearcherLoading = useResearcherSearchStore((state) => state.isLoading);
+
+    if (isResearcherLoading) {
+        return (
+            <AppShell>
+                <div className="flex flex-col flex-1 justify-center items-center w-full h-full">
+                    <div className="flex flex-col items-center gap-4">
+                        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                        <p className="text-muted-foreground text-sm">Загрузка поиска...</p>
+                    </div>
+                </div>
+            </AppShell>
+        );
+    }
 
     return (
         <AppShell>
@@ -296,6 +316,15 @@ export default function SearchPage() {
                                                         }}
                                                         index={index}
                                                         onClick={() => { }}
+                                                        onWrite={async () => {
+                                                            try {
+                                                                const chat = await createChat(candidate.id, `Здравствуйте! Меня заинтересовал ваш профиль на позицию ${candidate.professionName}.`);
+                                                                router.push(`/messages?chatId=${chat.id}`);
+                                                            } catch (error) {
+                                                                console.error("Failed to start chat:", error);
+                                                                // Можно добавить toast уведомление об ошибке
+                                                            }
+                                                        }}
                                                     />
                                                 ))}
                                             </motion.div>

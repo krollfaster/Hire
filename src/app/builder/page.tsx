@@ -20,7 +20,8 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { Star, Link2, LayoutGrid, GitBranch, ArrowRight, Trash2, Undo2, Redo2, Save, RotateCcw, BookOpen, Wrench, Trophy, type LucideIcon } from "lucide-react";
+import { Star, Link2, LayoutGrid, GitBranch, ArrowRight, Trash2, Undo2, Redo2, Save, RotateCcw, BookOpen, Wrench, Trophy, Loader2, type LucideIcon } from "lucide-react";
+import { useProfessionStore } from "@/stores/useProfessionStore";
 
 type NodeTypeOrLegacy = NodeType | LegacyCategory;
 type FilterTab = "all" | NodeTypeOrLegacy;
@@ -319,9 +320,9 @@ function TraitCard({ trait, onClick, onHover, isHighlighted }: TraitCardProps) {
                         <StarRating value={trait.importance} />
                         {/* Evidence Level Icon */}
                         {trait.evidenceLevel && (
-                            <div 
+                            <div
                                 className={cn(
-                                    "flex items-center justify-center rounded-full w-5 h-5 transition-colors",
+                                    "flex justify-center items-center rounded-full w-5 h-5 transition-colors",
                                     evidenceLevelConfig[trait.evidenceLevel].bgColor
                                 )}
                                 title={evidenceLevelConfig[trait.evidenceLevel].label}
@@ -513,7 +514,7 @@ function TraitDetailSheet({
                             <Badge
                                 variant="outline"
                                 className={cn(
-                                    "text-xs gap-1",
+                                    "gap-1 text-xs",
                                     evidenceConfig.bgColor,
                                     evidenceConfig.color
                                 )}
@@ -654,6 +655,21 @@ function TraitsPanel() {
     const handleResetToSaved = () => {
         resetToSaved();
     };
+
+    const isProfessionSwitching = useProfessionStore((state) => state.isSwitching);
+    const isTraitsLoading = useTraitsStore((state) => state.isLoading);
+    const isLoading = isProfessionSwitching || isTraitsLoading;
+
+    if (isLoading) {
+        return (
+            <div className="flex flex-col flex-1 justify-center items-center w-full h-full">
+                <div className="flex flex-col items-center gap-4">
+                    <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                    <p className="text-muted-foreground text-sm">Загрузка навыков...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="flex flex-col h-full">

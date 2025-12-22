@@ -4,6 +4,7 @@ import "./globals.css";
 import { DataSyncProvider } from "@/components/providers/DataSyncProvider";
 import { AuthGuard } from "@/components/auth/AuthGuard";
 import { ProfessionGuard } from "@/components/auth/ProfessionGuard";
+import { SearchQueryGuard } from "@/components/auth/SearchQueryGuard";
 
 const inter = Inter({
   variable: "--font-geist-sans",
@@ -35,8 +36,10 @@ export default function RootLayout({
           {children}
           <AuthGuard />
           <ProfessionGuard />
+          <SearchQueryGuard />
         </DataSyncProvider>
       </body>
     </html>
   );
 }
+

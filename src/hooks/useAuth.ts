@@ -1,23 +1,29 @@
 "use client";
 
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuthStore } from "@/stores/useAuthStore";
 
 export function useAuth() {
   const { user, isHydrated, setUser } = useAuthStore();
   const supabase = createClient();
+  // Флаг для отслеживания завершения верификации сессии
+  const [isVerifying, setIsVerifying] = useState(true);
 
   const refreshUser = useCallback(async () => {
-    const { data: { user: supabaseUser } } = await supabase.auth.getUser();
-    if (supabaseUser) {
-      setUser({
-        id: supabaseUser.id,
-        email: supabaseUser.email || '',
-        user_metadata: supabaseUser.user_metadata,
-      });
-    } else {
-      setUser(null);
+    try {
+      const { data: { user: supabaseUser } } = await supabase.auth.getUser();
+      if (supabaseUser) {
+        setUser({
+          id: supabaseUser.id,
+          email: supabaseUser.email || '',
+          user_metadata: supabaseUser.user_metadata,
+        });
+      } else {
+        setUser(null);
+      }
+    } finally {
+      setIsVerifying(false);
     }
   }, [supabase.auth, setUser]);
 
@@ -39,6 +45,8 @@ export function useAuth() {
         } else {
           setUser(null);
         }
+        // Сессия обновилась - верификация завершена
+        setIsVerifying(false);
       }
     );
 
@@ -49,8 +57,8 @@ export function useAuth() {
 
   return {
     user,
-    // Only show loading if not hydrated yet (first load)
-    isLoading: !isHydrated,
+    // Loading пока не hydrated ИЛИ пока идёт верификация сессии
+    isLoading: !isHydrated || isVerifying,
     isAuthenticated: !!user,
     refreshUser,
   };

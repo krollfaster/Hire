@@ -17,8 +17,11 @@ model User {
   avatarUrl String?  // URL аватара
   createdAt DateTime @default(now())
 
-  professions Profession[]
-  searches    ResearcherSearch[]
+  professions     Profession[]
+  searches        ResearcherSearch[]
+  candidateChats  Chat[]        @relation("CandidateChats")
+  researcherChats Chat[]        @relation("ResearcherChats")
+  sentMessages    ChatMessage[]
 }
 
 model Profession {
@@ -40,6 +43,7 @@ model Profession {
 
   user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   graph Graph?
+  chats Chat[] // Список чатов с ресерчерами
 
   @@index([userId])
 }
@@ -57,14 +61,60 @@ model Graph {
 model ResearcherSearch {
   id        String   @id @default(uuid())
   userId    String
-  query     String   // Текст поискового запроса
+  query     String   // Текст поискового запроса (название должности)
   name      String?  // Название поиска
+  grade     String?  // Грейд искомой должности
+  salaryMin Int?     // Минимальный бюджет
+  salaryMax Int?     // Максимальный бюджет
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chats Chat[] // Список чатов с кандидатами
 
   @@index([userId])
 }
 
+model Chat {
+  id                 String   @id @default(uuid())
+  
+  // Для кандидата: чат привязан к его профессии
+  professionId       String?
+  // Для ресерчера: чат привязан к его поисковому запросу  
+  researcherSearchId String?
+  
+  // Участники чата
+  candidateUserId    String   // ID кандидата (владелец профессии)
+  researcherUserId   String   // ID ресерчера (владелец поискового запроса)
+  
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  profession         Profession?       @relation(fields: [professionId], references: [id], onDelete: Cascade)
+  researcherSearch   ResearcherSearch? @relation(fields: [researcherSearchId], references: [id], onDelete: Cascade)
+  candidateUser      User              @relation("CandidateChats", fields: [candidateUserId], references: [id])
+  researcherUser     User              @relation("ResearcherChats", fields: [researcherUserId], references: [id])
+  messages           ChatMessage[]
+
+  @@index([professionId])
+  @@index([researcherSearchId])
+  @@index([candidateUserId])
+  @@index([researcherUserId])
+  @@unique([candidateUserId, researcherUserId]) // Между двумя пользователями может быть только один чат
+}
+
+model ChatMessage {
+  id        String   @id @default(uuid())
+  chatId    String
+  senderId  String   // ID отправителя
+  content   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  chat   Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  sender User @relation(fields: [senderId], references: [id])
+
+  @@index([chatId])
+  @@index([senderId])
+}

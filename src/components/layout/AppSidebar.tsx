@@ -28,6 +28,7 @@ import { useRoleStore } from "@/stores/useRoleStore"
 import { useProfessionStore } from "@/stores/useProfessionStore"
 import { useTraitsStore } from "@/stores/useTraitsStore"
 import { useProfile } from "@/hooks/useProfile"
+import { useResearcherSearchStore } from "@/stores/useResearcherSearchStore"
 import { NavUser } from "./NavUser"
 import { TeamSwitcher } from "./TeamSwitcher"
 import { ResearcherSwitcher } from "./ResearcherSwitcher"
@@ -67,9 +68,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     const { displayName, avatarUrl, email, user, isLoading: isProfileLoading } = useProfile()
     const isSwitching = useProfessionStore((state) => state.isSwitching)
     const isTraitsLoading = useTraitsStore((state) => state.isLoading)
+    const isResearcherLoading = useResearcherSearchStore((state) => state.isLoading)
 
-    // Показываем skeleton только для кандидата при переключении профессии
-    const showMenuSkeleton = role !== 'recruiter' && (isSwitching || isTraitsLoading)
+    // Показываем skeleton при загрузке/переключении для обеих ролей
+    const showMenuSkeleton = role === 'recruiter'
+        ? isResearcherLoading
+        : (isSwitching || isTraitsLoading)
 
     const searchItems = role === 'recruiter' ? recruiterSearchItems : candidateSearchItems
     const platformItems = role === 'recruiter' ? recruiterNavItems : candidateNavItems

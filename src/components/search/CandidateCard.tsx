@@ -10,6 +10,7 @@ interface CandidateCardProps {
     candidate: GeneratedCandidate;
     index: number;
     onClick: () => void;
+    onWrite?: () => void;
 }
 
 const getScoreColor = (score: number) => {
@@ -26,7 +27,7 @@ const getScoreGlow = (score: number) => {
     return "shadow-orange-500/20";
 };
 
-export const CandidateCard = ({ candidate, index, onClick }: CandidateCardProps) => {
+export const CandidateCard = ({ candidate, index, onClick, onWrite }: CandidateCardProps) => {
     return (
         <motion.div
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
@@ -125,18 +126,24 @@ export const CandidateCard = ({ candidate, index, onClick }: CandidateCardProps)
                     )}
                 </div>
 
-                {/* Match explanation on hover */}
-                <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    whileHover={{ opacity: 1, height: "auto" }}
-                    className="overflow-hidden"
-                >
-                    <div className="mt-4 pt-4 border-border/50 border-t">
-                        <p className="text-muted-foreground text-xs italic">
-                            {candidate.matchExplanation}
-                        </p>
-                    </div>
-                </motion.div>
+                {/* Match explanation and Write button */}
+                <div className="flex justify-between items-end gap-4 mt-4 pt-4 border-border/50 border-t">
+                    <p className="flex-1 text-muted-foreground text-xs italic">
+                        {candidate.matchExplanation}
+                    </p>
+
+                    <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            if (onWrite) onWrite();
+                        }}
+                        className="bg-primary/10 hover:bg-primary/20 px-3 py-1.5 border border-primary/20 rounded-lg font-medium text-primary text-xs transition-colors"
+                    >
+                        Написать
+                    </motion.button>
+                </div>
             </div>
         </motion.div>
     );
