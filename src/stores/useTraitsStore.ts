@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
 
 // Types - STAR-Graph (Evidence-Based Competence Graph)
 
@@ -201,269 +202,9 @@ function traitsAreEqual(a: Trait[], b: Trait[]): boolean {
     return JSON.stringify(a) === JSON.stringify(b);
 }
 
-export const useTraitsStore = create<TraitsState>((set, get) => ({
-    traits: [],
-    savedTraits: [],
-    traitsCache: {},
-    currentProfessionId: null,
-    history: [],
-    historyIndex: -1,
-    isLoading: false,
-    isSyncing: false,
-
-    applyActions: (actions) => {
-        set((state) => {
-            let newTraits = [...state.traits];
-
-            for (const action of actions) {
-                switch (action.type) {
-                    case "create":
-                        // Check if trait with this id already exists
-                        if (!newTraits.find(t => t.id === action.data.id)) {
-                            newTraits.push(action.data);
-                        }
-                        break;
-
-                    case "update":
-                        newTraits = newTraits.map(trait =>
-                            trait.id === action.id
-                                ? { ...trait, ...action.updates }
-                                : trait
-                        );
-                        break;
-
-                    case "delete":
-                        newTraits = newTraits.filter(trait => trait.id !== action.id);
-                        // Also remove references from relations
-                        newTraits = newTraits.map(trait => ({
-                            ...trait,
-                            relations: trait.relations.filter(rel => rel.targetId !== action.id)
-                        }));
-                        break;
-                }
-            }
-
-            // Push current state to history before applying changes
-            const { history, historyIndex } = pushToHistory(
-                state.history,
-                state.historyIndex,
-                state.traits
-            );
-
-            return {
-                traits: newTraits,
-                history,
-                historyIndex
-            };
-        });
-    },
-
-    replaceAll: (traits) => {
-        set((state) => {
-            // Push current state to history before replacing
-            const { history, historyIndex } = pushToHistory(
-                state.history,
-                state.historyIndex,
-                state.traits
-            );
-
-            return {
-                traits,
-                history,
-                historyIndex
-            };
-        });
-    },
-
-    undo: () => {
-        set((state) => {
-            if (state.historyIndex < 0) return state;
-
-            // Save current state to history if we're at the end
-            let history = state.history;
-            let historyIndex = state.historyIndex;
-
-            // If we're at the latest position and haven't saved current state yet
-            if (historyIndex === history.length - 1) {
-                // Push current state so we can redo back to it
-                history = [...history, state.traits];
-            }
-
-            // Get previous state from history
-            const previousState = history[historyIndex];
-
-            return {
-                traits: previousState,
-                history,
-                historyIndex: historyIndex - 1
-            };
-        });
-    },
-
-    redo: () => {
-        set((state) => {
-            if (state.historyIndex >= state.history.length - 1) return state;
-
-            const nextIndex = state.historyIndex + 1;
-            const nextState = state.history[nextIndex + 1] || state.history[nextIndex];
-
-            // If there's a state after the next index, use it
-            if (state.history[nextIndex + 1]) {
-                return {
-                    traits: state.history[nextIndex + 1],
-                    historyIndex: nextIndex
-                };
-            }
-
-            return state;
-        });
-    },
-
-    canUndo: () => {
-        const { historyIndex } = get();
-        return historyIndex >= 0;
-    },
-
-    canRedo: () => {
-        const { history, historyIndex } = get();
-        return historyIndex < history.length - 1;
-    },
-
-    hasUnsavedChanges: () => {
-        const { traits, savedTraits } = get();
-        return !traitsAreEqual(traits, savedTraits);
-    },
-
-    resetToSaved: () => {
-        set((state) => ({
-            traits: [...state.savedTraits],
-            history: [],
-            historyIndex: -1
-        }));
-    },
-
-    getContextForAI: () => {
-        const { traits } = get();
-        return traits.map(({ id, label, type }) => ({ id, label, type }));
-    },
-
-    loadFromServer: async (professionId?: string) => {
-        const { traitsCache, currentProfessionId } = get();
-        const targetProfessionId = professionId || 'default';
-
-        // Если данные уже в кэше - используем их мгновенно
-        if (traitsCache[targetProfessionId]) {
-            const cachedTraits = traitsCache[targetProfessionId];
-            set({
-                traits: cachedTraits,
-                savedTraits: cachedTraits,
-                currentProfessionId: targetProfessionId,
-                history: [],
-                historyIndex: -1,
-                isLoading: false
-            });
-            return;
-        }
-
-        set({ isLoading: true });
-        try {
-            const url = professionId
-                ? `/api/sync/graph?professionId=${professionId}`
-                : "/api/sync/graph";
-
-            const response = await fetch(url);
-            if (response.ok) {
-                const data = await response.json();
-                if (data.traits && Array.isArray(data.traits)) {
-                    // Migrate legacy traits to new STAR-Graph format
-                    const migratedTraits = migrateTraits(data.traits);
-
-                    // Обновляем кэш и состояние
-                    set((state) => ({
-                        traits: migratedTraits,
-                        savedTraits: migratedTraits,
-                        currentProfessionId: targetProfessionId,
-                        traitsCache: {
-                            ...state.traitsCache,
-                            [targetProfessionId]: migratedTraits
-                        },
-                        history: [],
-                        historyIndex: -1
-                    }));
-                }
-            }
-        } catch (error) {
-            console.error("Failed to load traits from server:", error);
-        } finally {
-            set({ isLoading: false });
-        }
-    },
-
-    saveToServer: async () => {
-        const { traits, currentProfessionId } = get();
-        set({ isSyncing: true });
-        try {
-            await fetch("/api/sync/graph", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ traits }),
-            });
-            // После успешного сохранения обновляем savedTraits, кэш и очищаем историю
-            set((state) => ({
-                savedTraits: traits,
-                traitsCache: currentProfessionId
-                    ? { ...state.traitsCache, [currentProfessionId]: traits }
-                    : state.traitsCache,
-                history: [],
-                historyIndex: -1
-            }));
-        } catch (error) {
-            console.error("Failed to save traits to server:", error);
-        } finally {
-            set({ isSyncing: false });
-        }
-    },
-
-    externalHighlightIds: [],
-    externalHighlightMode: 'view',
-    setExternalHighlightIds: (ids, mode = 'view') => set({ externalHighlightIds: ids, externalHighlightMode: mode }),
-
-    deleteTraits: (ids) => {
-        set((state) => {
-            // Find all traits to delete including the given ids and anything that depends on them?
-            // For now, we only delete the specific traits requested (and their relations will be cleaned up by the delete logic)
-            // But wait, our 'delete' action in applyActions handles single ID.
-            // We need to batch delete.
-
-            const idsToDelete = new Set(ids);
-
-            // Also find connections to remove
-            let newTraits = state.traits.filter(trait => !idsToDelete.has(trait.id));
-
-            // Cleanup relations in remaining traits
-            newTraits = newTraits.map(trait => ({
-                ...trait,
-                relations: trait.relations.filter(rel => !idsToDelete.has(rel.targetId))
-            }));
-
-            // Push to history
-            const { history, historyIndex } = pushToHistory(
-                state.history,
-                state.historyIndex,
-                state.traits
-            );
-
-            return {
-                traits: newTraits,
-                history,
-                historyIndex,
-                externalHighlightIds: [] // Clear highlights after delete
-            };
-        });
-    },
-
-    clearAll: () => {
-        set({
+export const useTraitsStore = create<TraitsState>()(
+    persist(
+        (set, get) => ({
             traits: [],
             savedTraits: [],
             traitsCache: {},
@@ -472,8 +213,288 @@ export const useTraitsStore = create<TraitsState>((set, get) => ({
             historyIndex: -1,
             isLoading: false,
             isSyncing: false,
+
+            applyActions: (actions) => {
+                set((state) => {
+                    let newTraits = [...state.traits];
+
+                    for (const action of actions) {
+                        switch (action.type) {
+                            case "create":
+                                // Check if trait with this id already exists
+                                if (!newTraits.find(t => t.id === action.data.id)) {
+                                    newTraits.push(action.data);
+                                }
+                                break;
+
+                            case "update":
+                                newTraits = newTraits.map(trait =>
+                                    trait.id === action.id
+                                        ? { ...trait, ...action.updates }
+                                        : trait
+                                );
+                                break;
+
+                            case "delete":
+                                newTraits = newTraits.filter(trait => trait.id !== action.id);
+                                // Also remove references from relations
+                                newTraits = newTraits.map(trait => ({
+                                    ...trait,
+                                    relations: trait.relations.filter(rel => rel.targetId !== action.id)
+                                }));
+                                break;
+                        }
+                    }
+
+                    // Push current state to history before applying changes
+                    const { history, historyIndex } = pushToHistory(
+                        state.history,
+                        state.historyIndex,
+                        state.traits
+                    );
+
+                    return {
+                        traits: newTraits,
+                        history,
+                        historyIndex
+                    };
+                });
+            },
+
+            replaceAll: (traits) => {
+                set((state) => {
+                    // Push current state to history before replacing
+                    const { history, historyIndex } = pushToHistory(
+                        state.history,
+                        state.historyIndex,
+                        state.traits
+                    );
+
+                    return {
+                        traits,
+                        history,
+                        historyIndex
+                    };
+                });
+            },
+
+            undo: () => {
+                set((state) => {
+                    if (state.historyIndex < 0) return state;
+
+                    // Save current state to history if we're at the end
+                    let history = state.history;
+                    let historyIndex = state.historyIndex;
+
+                    // If we're at the latest position and haven't saved current state yet
+                    if (historyIndex === history.length - 1) {
+                        // Push current state so we can redo back to it
+                        history = [...history, state.traits];
+                    }
+
+                    // Get previous state from history
+                    const previousState = history[historyIndex];
+
+                    return {
+                        traits: previousState,
+                        history,
+                        historyIndex: historyIndex - 1
+                    };
+                });
+            },
+
+            redo: () => {
+                set((state) => {
+                    if (state.historyIndex >= state.history.length - 1) return state;
+
+                    const nextIndex = state.historyIndex + 1;
+                    const nextState = state.history[nextIndex + 1] || state.history[nextIndex];
+
+                    // If there's a state after the next index, use it
+                    if (state.history[nextIndex + 1]) {
+                        return {
+                            traits: state.history[nextIndex + 1],
+                            historyIndex: nextIndex
+                        };
+                    }
+
+                    return state;
+                });
+            },
+
+            canUndo: () => {
+                const { historyIndex } = get();
+                return historyIndex >= 0;
+            },
+
+            canRedo: () => {
+                const { history, historyIndex } = get();
+                return historyIndex < history.length - 1;
+            },
+
+            hasUnsavedChanges: () => {
+                const { traits, savedTraits } = get();
+                return !traitsAreEqual(traits, savedTraits);
+            },
+
+            resetToSaved: () => {
+                set((state) => ({
+                    traits: [...state.savedTraits],
+                    history: [],
+                    historyIndex: -1
+                }));
+            },
+
+            getContextForAI: () => {
+                const { traits } = get();
+                return traits.map(({ id, label, type }) => ({ id, label, type }));
+            },
+
+            loadFromServer: async (professionId?: string) => {
+                const { traitsCache, currentProfessionId } = get();
+                const targetProfessionId = professionId || 'default';
+
+                // Если данные уже в кэше - используем их мгновенно
+                if (traitsCache[targetProfessionId]) {
+                    const cachedTraits = traitsCache[targetProfessionId];
+                    set({
+                        traits: cachedTraits,
+                        savedTraits: cachedTraits,
+                        currentProfessionId: targetProfessionId,
+                        history: [],
+                        historyIndex: -1,
+                        isLoading: false
+                    });
+                    return;
+                }
+
+                set({ isLoading: true });
+                try {
+                    const url = professionId
+                        ? `/api/sync/graph?professionId=${professionId}`
+                        : "/api/sync/graph";
+
+                    const response = await fetch(url);
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.traits && Array.isArray(data.traits)) {
+                            // Migrate legacy traits to new STAR-Graph format
+                            const migratedTraits = migrateTraits(data.traits);
+
+                            // Обновляем кэш и состояние
+                            set((state) => ({
+                                traits: migratedTraits,
+                                savedTraits: migratedTraits,
+                                currentProfessionId: targetProfessionId,
+                                traitsCache: {
+                                    ...state.traitsCache,
+                                    [targetProfessionId]: migratedTraits
+                                },
+                                history: [],
+                                historyIndex: -1
+                            }));
+                        }
+                    }
+                } catch (error) {
+                    console.error("Failed to load traits from server:", error);
+                } finally {
+                    set({ isLoading: false });
+                }
+            },
+
+            saveToServer: async () => {
+                const { traits, currentProfessionId } = get();
+                set({ isSyncing: true });
+                try {
+                    await fetch("/api/sync/graph", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ traits }),
+                    });
+                    // После успешного сохранения обновляем savedTraits, кэш и очищаем историю
+                    set((state) => ({
+                        savedTraits: traits,
+                        traitsCache: currentProfessionId
+                            ? { ...state.traitsCache, [currentProfessionId]: traits }
+                            : state.traitsCache,
+                        history: [],
+                        historyIndex: -1
+                    }));
+                } catch (error) {
+                    console.error("Failed to save traits to server:", error);
+                } finally {
+                    set({ isSyncing: false });
+                }
+            },
+
             externalHighlightIds: [],
             externalHighlightMode: 'view',
-        });
-    },
-}));
+            setExternalHighlightIds: (ids, mode = 'view') => set({ externalHighlightIds: ids, externalHighlightMode: mode }),
+
+            deleteTraits: (ids) => {
+                set((state) => {
+                    // Find all traits to delete including the given ids and anything that depends on them?
+                    // For now, we only delete the specific traits requested (and their relations will be cleaned up by the delete logic)
+                    // But wait, our 'delete' action in applyActions handles single ID.
+                    // We need to batch delete.
+
+                    const idsToDelete = new Set(ids);
+
+                    // Also find connections to remove
+                    let newTraits = state.traits.filter(trait => !idsToDelete.has(trait.id));
+
+                    // Cleanup relations in remaining traits
+                    newTraits = newTraits.map(trait => ({
+                        ...trait,
+                        relations: trait.relations.filter(rel => !idsToDelete.has(rel.targetId))
+                    }));
+
+                    // Push to history
+                    const { history, historyIndex } = pushToHistory(
+                        state.history,
+                        state.historyIndex,
+                        state.traits
+                    );
+
+                    return {
+                        traits: newTraits,
+                        history,
+                        historyIndex,
+                        externalHighlightIds: [] // Clear highlights after delete
+                    };
+                });
+            },
+
+            clearAll: () => {
+                set({
+                    traits: [],
+                    savedTraits: [],
+                    traitsCache: {},
+                    currentProfessionId: null,
+                    history: [],
+                    historyIndex: -1,
+                    isLoading: false,
+                    isSyncing: false,
+                    externalHighlightIds: [],
+                    externalHighlightMode: 'view',
+                });
+            },
+        }),
+        {
+            name: 'traits-storage',
+            storage: createJSONStorage(() => localStorage),
+            partialize: (state) => ({
+                traitsCache: state.traitsCache,
+                currentProfessionId: state.currentProfessionId,
+            }),
+            // При загрузке восстанавливаем traits из кэша для текущей профессии
+            onRehydrateStorage: () => (state) => {
+                if (state && state.currentProfessionId && state.traitsCache[state.currentProfessionId]) {
+                    const cachedTraits = state.traitsCache[state.currentProfessionId];
+                    state.traits = cachedTraits;
+                    state.savedTraits = cachedTraits;
+                }
+            },
+        }
+    )
+);

@@ -69,22 +69,6 @@ export async function POST(request: NextRequest) {
             },
         });
 
-        // Проверяем есть ли у пользователя другие профессии
-        const existingCount = await prisma.profession.count({
-            where: { userId: user.id },
-        });
-
-        // Если это первая профессия - делаем её активной
-        const isActive = existingCount === 0;
-
-        // Если новая профессия активна - деактивируем остальные
-        if (isActive) {
-            await prisma.profession.updateMany({
-                where: { userId: user.id },
-                data: { isActive: false },
-            });
-        }
-
         // Создаем профессию с пустым графом
         const profession = await prisma.profession.create({
             data: {
@@ -98,7 +82,6 @@ export async function POST(request: NextRequest) {
                 workFormat: workFormat || null,
                 travelTime: travelTime || null,
                 businessTrips: businessTrips !== undefined ? businessTrips : null,
-                isActive,
                 graph: {
                     create: {
                         content: [],

@@ -1,6 +1,25 @@
 import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
 
 export type ProfessionStatus = "active_search" | "considering" | "not_searching";
+
+// Ключ для хранения последней активной профессии в localStorage
+const LAST_ACTIVE_PROFESSION_KEY = "lastActiveProfessionId";
+
+// Helper функции для работы с localStorage
+const getLastActiveProfessionId = (): string | null => {
+    if (typeof window === "undefined") return null;
+    return localStorage.getItem(LAST_ACTIVE_PROFESSION_KEY);
+};
+
+const setLastActiveProfessionId = (id: string | null): void => {
+    if (typeof window === "undefined") return;
+    if (id) {
+        localStorage.setItem(LAST_ACTIVE_PROFESSION_KEY, id);
+    } else {
+        localStorage.removeItem(LAST_ACTIVE_PROFESSION_KEY);
+    }
+};
 
 export interface Profession {
     id: string;
@@ -13,7 +32,6 @@ export interface Profession {
     workFormat: string | null;
     travelTime: string | null;
     businessTrips: boolean | null;
-    isActive: boolean;
     createdAt: string;
     updatedAt: string;
 }
@@ -60,193 +78,9 @@ interface ProfessionState {
     clearAll: () => void;
 }
 
-export const useProfessionStore = create<ProfessionState>((set, get) => ({
-    professions: [],
-    activeProfession: null,
-    isLoading: false,
-    isSyncing: false,
-    isSwitching: false,
-    isSetupModalOpen: false,
-    hasInitialized: false,
-
-    setProfessions: (professions) => {
-        const active = professions.find(p => p.isActive) || professions[0] || null;
-        set({ professions, activeProfession: active });
-    },
-
-    setSetupModalOpen: (open) => {
-        set({ isSetupModalOpen: open });
-    },
-
-    setActiveProfession: (profession) => {
-        set({ activeProfession: profession });
-    },
-
-    addProfession: (profession) => {
-        set((state) => ({
-            professions: [...state.professions, profession],
-            activeProfession: profession.isActive ? profession : state.activeProfession,
-        }));
-    },
-
-    updateProfession: (id, updates) => {
-        set((state) => {
-            const professions = state.professions.map(p =>
-                p.id === id ? { ...p, ...updates } : p
-            );
-            const activeProfession = state.activeProfession?.id === id
-                ? { ...state.activeProfession, ...updates }
-                : state.activeProfession;
-            return { professions, activeProfession };
-        });
-    },
-
-    deleteProfession: (id) => {
-        set((state) => {
-            const professions = state.professions.filter(p => p.id !== id);
-            const activeProfession = state.activeProfession?.id === id
-                ? professions[0] || null
-                : state.activeProfession;
-            return { professions, activeProfession };
-        });
-    },
-
-    loadFromServer: async () => {
-        set({ isLoading: true });
-        try {
-            const response = await fetch("/api/professions");
-            if (response.ok) {
-                const data = await response.json();
-                if (data.professions && Array.isArray(data.professions)) {
-                    const active = data.professions.find((p: Profession) => p.isActive) || data.professions[0] || null;
-                    set({ professions: data.professions, activeProfession: active });
-                }
-            }
-        } catch (error) {
-            console.error("Failed to load professions from server:", error);
-        } finally {
-            set({ isLoading: false, hasInitialized: true });
-        }
-    },
-
-    createProfession: async (data) => {
-        set({ isSyncing: true });
-        try {
-            const response = await fetch("/api/professions", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(data),
-            });
-
-            if (response.ok) {
-                const result = await response.json();
-                const profession = result.profession;
-
-                // Если это первая профессия или она активна - обновляем состояние
-                set((state) => {
-                    const professions = [...state.professions, profession];
-                    const activeProfession = profession.isActive ? profession : state.activeProfession;
-                    return { professions, activeProfession };
-                });
-
-                return profession;
-            }
-            return null;
-        } catch (error) {
-            console.error("Failed to create profession:", error);
-            return null;
-        } finally {
-            set({ isSyncing: false });
-        }
-    },
-
-    editProfession: async (id, data) => {
-        set({ isSyncing: true });
-        try {
-            const response = await fetch(`/api/professions/${id}`, {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(data),
-            });
-
-            if (response.ok) {
-                const result = await response.json();
-                const updatedProfession = result.profession;
-
-                // Обновляем локальное состояние
-                get().updateProfession(id, updatedProfession);
-
-                return updatedProfession;
-            }
-            return null;
-        } catch (error) {
-            console.error("Failed to edit profession:", error);
-            return null;
-        } finally {
-            set({ isSyncing: false });
-        }
-    },
-
-    switchProfession: async (id, skipLoading = false) => {
-        // Оптимистичное обновление: сначала меняем локально
-        const previousProfessions = get().professions;
-        const previousActive = get().activeProfession;
-
-        set((state) => {
-            const professions = state.professions.map(p => ({
-                ...p,
-                isActive: p.id === id,
-            }));
-            const activeProfession = professions.find(p => p.id === id) || null;
-            // Если skipLoading - не показываем loading state (данные из кэша)
-            return {
-                professions,
-                activeProfession,
-                isSyncing: true,
-                isSwitching: skipLoading ? false : true
-            };
-        });
-
-        try {
-            const response = await fetch(`/api/professions/${id}/activate`, {
-                method: "POST",
-            });
-
-            if (!response.ok) {
-                throw new Error("Failed to switch profession");
-            }
-        } catch (error) {
-            console.error("Failed to switch profession:", error);
-            // Откат при ошибке
-            set({ professions: previousProfessions, activeProfession: previousActive });
-        } finally {
-            set({ isSyncing: false, isSwitching: false });
-        }
-    },
-
-    setSwitching: (value: boolean) => {
-        set({ isSwitching: value });
-    },
-
-    removeProfession: async (id) => {
-        set({ isSyncing: true });
-        try {
-            const response = await fetch(`/api/professions/${id}`, {
-                method: "DELETE",
-            });
-
-            if (response.ok) {
-                get().deleteProfession(id);
-            }
-        } catch (error) {
-            console.error("Failed to delete profession:", error);
-        } finally {
-            set({ isSyncing: false });
-        }
-    },
-
-    clearAll: () => {
-        set({
+export const useProfessionStore = create<ProfessionState>()(
+    persist(
+        (set, get) => ({
             professions: [],
             activeProfession: null,
             isLoading: false,
@@ -254,7 +88,221 @@ export const useProfessionStore = create<ProfessionState>((set, get) => ({
             isSwitching: false,
             isSetupModalOpen: false,
             hasInitialized: false,
-        });
-    },
-}));
+
+            setProfessions: (professions) => {
+                const lastActiveId = getLastActiveProfessionId();
+                const active = professions.find(p => p.id === lastActiveId) || professions[0] || null;
+                if (active) {
+                    setLastActiveProfessionId(active.id);
+                }
+                set({ professions, activeProfession: active });
+            },
+
+            setSetupModalOpen: (open) => {
+                set({ isSetupModalOpen: open });
+            },
+
+            setActiveProfession: (profession) => {
+                setLastActiveProfessionId(profession?.id || null);
+                set({ activeProfession: profession });
+            },
+
+            addProfession: (profession) => {
+                set((state) => {
+                    const isFirst = state.professions.length === 0;
+                    const newActiveProfession = isFirst ? profession : state.activeProfession;
+                    if (isFirst) {
+                        setLastActiveProfessionId(profession.id);
+                    }
+                    return {
+                        professions: [...state.professions, profession],
+                        activeProfession: newActiveProfession,
+                    };
+                });
+            },
+
+            updateProfession: (id, updates) => {
+                set((state) => {
+                    const professions = state.professions.map(p =>
+                        p.id === id ? { ...p, ...updates } : p
+                    );
+                    const activeProfession = state.activeProfession?.id === id
+                        ? { ...state.activeProfession, ...updates }
+                        : state.activeProfession;
+                    return { professions, activeProfession };
+                });
+            },
+
+            deleteProfession: (id) => {
+                set((state) => {
+                    const professions = state.professions.filter(p => p.id !== id);
+                    const wasActive = state.activeProfession?.id === id;
+                    const activeProfession = wasActive
+                        ? professions[0] || null
+                        : state.activeProfession;
+                    if (wasActive) {
+                        setLastActiveProfessionId(activeProfession?.id || null);
+                    }
+                    return { professions, activeProfession };
+                });
+            },
+
+            loadFromServer: async () => {
+                set({ isLoading: true });
+                try {
+                    const response = await fetch("/api/professions");
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.professions && Array.isArray(data.professions)) {
+                            // Пробуем найти последнюю активную профессию из localStorage
+                            const lastActiveId = getLastActiveProfessionId();
+                            const active = data.professions.find((p: Profession) => p.id === lastActiveId)
+                                || data.professions[0]
+                                || null;
+                            // Сохраняем актуальный ID в localStorage
+                            if (active) {
+                                setLastActiveProfessionId(active.id);
+                            }
+                            set({ professions: data.professions, activeProfession: active });
+                        }
+                    }
+                } catch (error) {
+                    console.error("Failed to load professions from server:", error);
+                } finally {
+                    set({ isLoading: false, hasInitialized: true });
+                }
+            },
+
+            createProfession: async (data) => {
+                set({ isSyncing: true });
+                try {
+                    const response = await fetch("/api/professions", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(data),
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        const profession = result.profession;
+
+                        // Если это первая профессия - делаем её активной
+                        set((state) => {
+                            const isFirst = state.professions.length === 0;
+                            const professions = [...state.professions, profession];
+                            const activeProfession = isFirst ? profession : state.activeProfession;
+                            if (isFirst) {
+                                setLastActiveProfessionId(profession.id);
+                            }
+                            return { professions, activeProfession };
+                        });
+
+                        return profession;
+                    }
+                    return null;
+                } catch (error) {
+                    console.error("Failed to create profession:", error);
+                    return null;
+                } finally {
+                    set({ isSyncing: false });
+                }
+            },
+
+            editProfession: async (id, data) => {
+                set({ isSyncing: true });
+                try {
+                    const response = await fetch(`/api/professions/${id}`, {
+                        method: "PATCH",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(data),
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        const updatedProfession = result.profession;
+
+                        // Обновляем локальное состояние
+                        get().updateProfession(id, updatedProfession);
+
+                        return updatedProfession;
+                    }
+                    return null;
+                } catch (error) {
+                    console.error("Failed to edit profession:", error);
+                    return null;
+                } finally {
+                    set({ isSyncing: false });
+                }
+            },
+
+            switchProfession: async (id, skipLoading = false) => {
+                // Переключение теперь только локальное - сохраняем в localStorage
+                const activeProfession = get().professions.find(p => p.id === id) || null;
+
+                if (activeProfession) {
+                    setLastActiveProfessionId(id);
+                    set({
+                        activeProfession,
+                        isSwitching: skipLoading ? false : true
+                    });
+                }
+
+                // Сбрасываем флаг переключения после небольшой задержки
+                // (нужно для анимации загрузки traits)
+                if (!skipLoading) {
+                    // isSwitching сбросится в useTraitsStore после загрузки
+                }
+            },
+
+            setSwitching: (value: boolean) => {
+                set({ isSwitching: value });
+            },
+
+            removeProfession: async (id) => {
+                set({ isSyncing: true });
+                try {
+                    const response = await fetch(`/api/professions/${id}`, {
+                        method: "DELETE",
+                    });
+
+                    if (response.ok) {
+                        get().deleteProfession(id);
+                    }
+                } catch (error) {
+                    console.error("Failed to delete profession:", error);
+                } finally {
+                    set({ isSyncing: false });
+                }
+            },
+
+            clearAll: () => {
+                // Очищаем localStorage при выходе
+                setLastActiveProfessionId(null);
+                set({
+                    professions: [],
+                    activeProfession: null,
+                    isLoading: false,
+                    isSyncing: false,
+                    isSwitching: false,
+                    isSetupModalOpen: false,
+                    hasInitialized: false,
+                });
+            },
+        }),
+        {
+            name: 'professions-storage',
+            storage: createJSONStorage(() => localStorage),
+            partialize: (state) => ({
+                professions: state.professions,
+                activeProfession: state.activeProfession,
+            }),
+            onRehydrateStorage: () => (state) => {
+                // После регидрации помечаем что данные загружены из кэша
+                if (state && state.professions.length > 0) {
+                    state.hasInitialized = true;
+                }
+            },
+        }
+    )
+);
 

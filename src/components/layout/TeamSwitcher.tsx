@@ -56,7 +56,7 @@ function getStatusIcon(status: string | null | undefined): LucideIcon {
 
 export function TeamSwitcher() {
     const { isMobile } = useSidebar()
-    const { professions, activeProfession, switchProfession, removeProfession, isLoading, isSetupModalOpen, setSetupModalOpen } = useProfessionStore()
+    const { professions, activeProfession, switchProfession, removeProfession, isLoading, isSetupModalOpen, setSetupModalOpen, setSwitching } = useProfessionStore()
     const loadTraits = useTraitsStore((state) => state.loadFromServer)
     const traitsCache = useTraitsStore((state) => state.traitsCache)
     const [professionToEdit, setProfessionToEdit] = React.useState<Profession | null>(null);
@@ -70,6 +70,8 @@ export function TeamSwitcher() {
         // switchProfession с skipLoading=true не показывает загрузку
         switchProfession(profession.id, hasCachedData);
         await loadTraits(profession.id);
+        // Сбрасываем флаг переключения после загрузки
+        setSwitching(false);
     };
 
     const handleAddProfession = () => {
@@ -231,7 +233,7 @@ export function TeamSwitcher() {
                                                 <Trash2 className="size-3 text-muted-foreground hover:text-destructive" />
                                             </div>
                                         </div>
-                                        {profession.isActive && (
+                                        {profession.id === activeProfession?.id && (
                                             <div className="bg-primary group-hover:opacity-0 rounded-full size-2 transition-opacity" />
                                         )}
                                     </DropdownMenuItem>

@@ -1,42 +1,57 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
-import type { User } from "@supabase/supabase-js";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 export function useAuth() {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { user, isHydrated, setUser } = useAuthStore();
   const supabase = createClient();
 
   const refreshUser = useCallback(async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    setUser(user);
-    setIsLoading(false);
-  }, [supabase.auth]);
+    const { data: { user: supabaseUser } } = await supabase.auth.getUser();
+    if (supabaseUser) {
+      setUser({
+        id: supabaseUser.id,
+        email: supabaseUser.email || '',
+        user_metadata: supabaseUser.user_metadata,
+      });
+    } else {
+      setUser(null);
+    }
+  }, [supabase.auth, setUser]);
 
   useEffect(() => {
-    // Получаем начальное состояние пользователя
-    refreshUser();
+    // Only fetch user if hydrated and we need to verify
+    if (isHydrated) {
+      refreshUser();
+    }
 
-    // Подписываемся на изменения аутентификации
+    // Subscribe to auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
-        setUser(session?.user ?? null);
-        setIsLoading(false);
+        if (session?.user) {
+          setUser({
+            id: session.user.id,
+            email: session.user.email || '',
+            user_metadata: session.user.user_metadata,
+          });
+        } else {
+          setUser(null);
+        }
       }
     );
 
     return () => {
       subscription.unsubscribe();
     };
-  }, [supabase.auth, refreshUser]);
+  }, [supabase.auth, refreshUser, isHydrated, setUser]);
 
   return {
     user,
-    isLoading,
+    // Only show loading if not hydrated yet (first load)
+    isLoading: !isHydrated,
     isAuthenticated: !!user,
     refreshUser,
   };
 }
-

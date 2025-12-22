@@ -2,12 +2,11 @@
 
 import {
     ArrowLeftRight,
-    Bell,
     ChevronRight,
     ChevronsUpDown,
     CreditCard,
     LogOut,
-    Sparkles,
+    Settings,
     User,
 } from "lucide-react"
 
@@ -32,10 +31,7 @@ import {
     SidebarMenuItem,
     useSidebar,
 } from "@/components/ui/sidebar"
-import { createClient } from "@/lib/supabase/client"
-import { useRouter } from "next/navigation"
 import { useState } from "react"
-import { UserSettingsModal } from "@/components/user/UserSettingsModal"
 import { AuthModal } from "@/components/auth/AuthModal"
 import { signOut } from "@/app/actions/auth"
 import { useProfessionStore } from "@/stores/useProfessionStore"
@@ -45,6 +41,7 @@ import { useSearchStore } from "@/stores/useSearchStore"
 import { useChatStore } from "@/stores/useChatStore"
 import { useMessagesStore } from "@/stores/useMessagesStore"
 import { useRoleStore } from "@/stores/useRoleStore"
+import { useAuthStore } from "@/stores/useAuthStore"
 
 interface NavUserProps {
     user: {
@@ -52,14 +49,12 @@ interface NavUserProps {
         email: string
         avatar: string
     } | null
+    isLoading?: boolean
 }
 
-export function NavUser({ user }: NavUserProps) {
+export function NavUser({ user, isLoading }: NavUserProps) {
     const { isMobile } = useSidebar()
-    const router = useRouter()
-    const supabase = createClient()
     const [authModalOpen, setAuthModalOpen] = useState(false)
-    const [settingsModalOpen, setSettingsModalOpen] = useState(false)
     const { role, setRole } = useRoleStore()
 
     const handleLogout = async () => {
@@ -71,6 +66,7 @@ export function NavUser({ user }: NavUserProps) {
         const chatStore = useChatStore.getState()
         const messagesStore = useMessagesStore.getState()
         const roleStore = useRoleStore.getState()
+        const authStore = useAuthStore.getState()
 
         professionStore.clearAll()
         traitsStore.clearAll()
@@ -79,6 +75,7 @@ export function NavUser({ user }: NavUserProps) {
         chatStore.clearAll()
         messagesStore.clearAll()
         roleStore.clearAll()
+        authStore.clearAll()
 
         await signOut()
     }
@@ -89,6 +86,23 @@ export function NavUser({ user }: NavUserProps) {
             return (parts[0][0] + parts[1][0]).toUpperCase()
         }
         return name.slice(0, 2).toUpperCase()
+    }
+
+    // Show skeleton while loading to prevent flicker
+    if (isLoading) {
+        return (
+            <SidebarMenu>
+                <SidebarMenuItem>
+                    <SidebarMenuButton size="lg" disabled>
+                        <div className="bg-muted rounded-lg w-8 h-8 animate-pulse" />
+                        <div className="flex-1 gap-1 grid">
+                            <div className="bg-muted rounded w-24 h-4 animate-pulse" />
+                            <div className="bg-muted rounded w-32 h-3 animate-pulse" />
+                        </div>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+            </SidebarMenu>
+        )
     }
 
     if (!user) {
@@ -153,30 +167,20 @@ export function NavUser({ user }: NavUserProps) {
                             </DropdownMenuLabel>
                             <DropdownMenuSeparator />
                             <DropdownMenuGroup>
-                                <DropdownMenuItem onClick={() => {
-                                    setRole(role === 'candidate' ? 'recruiter' : 'candidate')
-                                }}>
-                                    <ArrowLeftRight className="mr-2 size-4" />
-                                    {role === 'candidate' ? 'Переключить на Ресерчер' : 'Переключить на Кандидата'}
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => setSettingsModalOpen(true)}>
-                                    <User className="mr-2 size-4" />
-                                    Аккаунт
-                                </DropdownMenuItem>
                                 <DropdownMenuItem disabled>
                                     <CreditCard className="mr-2 size-4" />
                                     Тарифы
                                 </DropdownMenuItem>
                                 <DropdownMenuItem disabled>
-                                    <Bell className="mr-2 size-4" />
+                                    <Settings className="mr-2 size-4" />
                                     Настройки
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem asChild>
-                                    <a href="/">
-                                        <Sparkles className="mr-2 size-4" />
-                                        Главная
-                                    </a>
+                                <DropdownMenuItem onClick={() => {
+                                    setRole(role === 'candidate' ? 'recruiter' : 'candidate')
+                                }}>
+                                    <ArrowLeftRight className="mr-2 size-4" />
+                                    {role === 'candidate' ? 'Переключить на Ресерчер' : 'Переключить на Кандидата'}
                                 </DropdownMenuItem>
                             </DropdownMenuGroup>
                             <DropdownMenuSeparator />
@@ -188,7 +192,6 @@ export function NavUser({ user }: NavUserProps) {
                     </DropdownMenu>
                 </SidebarMenuItem>
             </SidebarMenu>
-            <UserSettingsModal open={settingsModalOpen} onOpenChange={setSettingsModalOpen} />
         </>
     )
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useAuth } from "./useAuth";
 
 interface ProfileData {
@@ -17,10 +17,20 @@ export function useProfile() {
     const { user, isLoading: isAuthLoading } = useAuth();
     const [profile, setProfile] = useState<ProfileData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const hasFetched = useRef(false);
+    const previousUserId = useRef<string | null>(null);
 
     const fetchProfile = useCallback(async () => {
         if (!user) {
             setProfile(null);
+            setIsLoading(false);
+            hasFetched.current = false;
+            previousUserId.current = null;
+            return;
+        }
+
+        // Don't refetch if same user and already fetched
+        if (hasFetched.current && previousUserId.current === user.id) {
             setIsLoading(false);
             return;
         }
@@ -30,6 +40,8 @@ export function useProfile() {
             if (response.ok) {
                 const data = await response.json();
                 setProfile(data.profile || null);
+                hasFetched.current = true;
+                previousUserId.current = user.id;
             }
         } catch (error) {
             console.error("Error fetching profile:", error);
@@ -58,7 +70,8 @@ export function useProfile() {
 
     return {
         profile,
-        isLoading: isLoading || isAuthLoading,
+        // Only show loading on initial auth load, not on navigation
+        isLoading: isAuthLoading,
         displayName,
         avatarUrl,
         email: user?.email || "",

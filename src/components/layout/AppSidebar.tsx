@@ -31,6 +31,7 @@ import { useProfile } from "@/hooks/useProfile"
 import { NavUser } from "./NavUser"
 import { TeamSwitcher } from "./TeamSwitcher"
 import { ResearcherSwitcher } from "./ResearcherSwitcher"
+import { ProBanner } from "./ProBanner"
 
 interface NavItem {
     href: string;
@@ -41,7 +42,7 @@ interface NavItem {
 
 // Для кандидата - Чаты и Навыки
 const candidateSearchItems: NavItem[] = [
-    { href: "/messages", label: "Чаты", icon: MessageCircle, disabled: true },
+    { href: "/messages", label: "Чаты", icon: MessageCircle },
     { href: "/builder", label: "Навыки", icon: PenLine },
 ]
 
@@ -63,7 +64,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     const pathname = usePathname()
 
     const { role } = useRoleStore()
-    const { displayName, avatarUrl, email, user } = useProfile()
+    const { displayName, avatarUrl, email, user, isLoading: isProfileLoading } = useProfile()
     const isSwitching = useProfessionStore((state) => state.isSwitching)
     const isTraitsLoading = useTraitsStore((state) => state.isLoading)
 
@@ -172,11 +173,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 )}
             </SidebarContent>
             <SidebarFooter>
-                <NavUser user={user ? {
-                    name: displayName,
-                    email: email,
-                    avatar: avatarUrl
-                } : null} />
+                <ProBanner />
+                <NavUser
+                    user={user ? {
+                        name: displayName,
+                        email: email,
+                        avatar: avatarUrl
+                    } : null}
+                    isLoading={isProfileLoading}
+                />
             </SidebarFooter>
             <SidebarRail />
         </Sidebar>

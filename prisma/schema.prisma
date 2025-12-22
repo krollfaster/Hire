@@ -42,7 +42,6 @@ model Profession {
   workFormat     String? // Офис, удалёнка, гибрид
   travelTime     String? // Время до работы
   businessTrips  Boolean? // Готовность к командировкам
-  isActive  Boolean  @default(false) // Активная профессия
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
