@@ -122,10 +122,8 @@ export async function POST(req: Request) {
             const profileText = traitsToText(traits, profession.name, profession.grade);
             const textMatchScore = simpleTextMatch(query, profileText);
 
-            // Формируем имя из firstName и lastName
-            const userName = profession.user
-                ? [profession.user.firstName, profession.user.lastName].filter(Boolean).join(' ') || "Пользователь"
-                : "Пользователь";
+            // Используем fullName напрямую
+            const userName = profession.user?.fullName || "Пользователь";
 
             return {
                 id: profession.id,

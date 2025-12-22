@@ -1,62 +1,41 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useEffect, useCallback } from "react";
 import { useAuth } from "./useAuth";
-
-interface ProfileData {
-    id?: string;
-    firstName?: string | null;
-    lastName?: string | null;
-    fullName?: string | null;
-    avatarUrl?: string | null;
-    employmentType?: string | null;
-    workFormat?: string | null;
-}
+import { useProfileStore } from "@/stores/useProfileStore";
 
 export function useProfile() {
     const { user, isLoading: isAuthLoading } = useAuth();
-    const [profile, setProfile] = useState<ProfileData | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const hasFetched = useRef(false);
-    const previousUserId = useRef<string | null>(null);
+    const { profile, isLoading, fetchProfile, setProfile, clearAll, currentUserId } = useProfileStore();
 
-    const fetchProfile = useCallback(async () => {
-        if (!user) {
-            setProfile(null);
-            setIsLoading(false);
-            hasFetched.current = false;
-            previousUserId.current = null;
-            return;
-        }
-
-        // Don't refetch if same user and already fetched
-        if (hasFetched.current && previousUserId.current === user.id) {
-            setIsLoading(false);
-            return;
-        }
-
-        try {
-            const response = await fetch("/api/profile");
-            if (response.ok) {
-                const data = await response.json();
-                setProfile(data.profile || null);
-                hasFetched.current = true;
-                previousUserId.current = user.id;
-            }
-        } catch (error) {
-            console.error("Error fetching profile:", error);
-        } finally {
-            setIsLoading(false);
-        }
-    }, [user]);
-
+    // Fetch profile when user changes
     useEffect(() => {
-        if (!isAuthLoading) {
-            fetchProfile();
-        }
-    }, [isAuthLoading, fetchProfile]);
+        if (isAuthLoading) return;
 
-    // Вычисленные значения с fallback на user_metadata
+        if (!user) {
+            clearAll();
+            return;
+        }
+
+        // Fetch from server (will use cached data from localStorage while loading)
+        fetchProfile(user.id);
+    }, [isAuthLoading, user, fetchProfile, clearAll]);
+
+    // Публичная функция refetch с принудительным обновлением
+    const refetch = useCallback(async () => {
+        if (user) {
+            await fetchProfile(user.id, true);
+        }
+    }, [user, fetchProfile]);
+
+    // Функция для мгновенного обновления профиля (для оптимистичного UI)
+    const updateProfileLocally = useCallback((updates: Partial<typeof profile>) => {
+        if (profile) {
+            setProfile({ ...profile, ...updates });
+        }
+    }, [profile, setProfile]);
+
+    // Приоритет: профиль из store (включая localStorage) > user_metadata > email
     const displayName = profile?.fullName ||
         user?.user_metadata?.full_name ||
         user?.user_metadata?.name ||
@@ -70,12 +49,12 @@ export function useProfile() {
 
     return {
         profile,
-        // Only show loading on initial auth load, not on navigation
         isLoading: isAuthLoading,
         displayName,
         avatarUrl,
         email: user?.email || "",
         user,
-        refetch: fetchProfile,
+        refetch,
+        updateProfileLocally,
     };
 }

@@ -189,7 +189,7 @@ export default function ProPage() {
                                 className="flex"
                             >
                                 <Card className={cn(
-                                    "relative flex flex-col hover:shadow-xl w-full h-full transition-all duration-300",
+                                    "relative flex flex-col hover:shadow-xl py-6 w-full h-full transition-all duration-300",
                                     plan.highlight
                                         ? "border-violet-500/50 shadow-violet-500/10 dark:bg-violet-950/10 bg-white"
                                         : "hover:border-violet-500/30 bg-background/60 backdrop-blur-sm"

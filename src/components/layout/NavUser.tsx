@@ -3,12 +3,12 @@
 import {
     ArrowLeftRight,
     ChevronRight,
-    ChevronsUpDown,
     CreditCard,
     LogOut,
     Settings,
     User,
 } from "lucide-react"
+import Link from "next/link"
 
 import {
     Avatar,
@@ -42,6 +42,7 @@ import { useChatStore } from "@/stores/useChatStore"
 import { useMessagesStore } from "@/stores/useMessagesStore"
 import { useRoleStore } from "@/stores/useRoleStore"
 import { useAuthStore } from "@/stores/useAuthStore"
+import { useProfileStore } from "@/stores/useProfileStore"
 
 interface NavUserProps {
     user: {
@@ -67,6 +68,7 @@ export function NavUser({ user, isLoading }: NavUserProps) {
         const messagesStore = useMessagesStore.getState()
         const roleStore = useRoleStore.getState()
         const authStore = useAuthStore.getState()
+        const profileStore = useProfileStore.getState()
 
         professionStore.clearAll()
         traitsStore.clearAll()
@@ -76,6 +78,7 @@ export function NavUser({ user, isLoading }: NavUserProps) {
         messagesStore.clearAll()
         roleStore.clearAll()
         authStore.clearAll()
+        profileStore.clearAll()
 
         await signOut()
     }
@@ -144,7 +147,7 @@ export function NavUser({ user, isLoading }: NavUserProps) {
                                     <span className="font-semibold truncate">{user.name}</span>
                                     <span className="text-xs truncate">{user.email}</span>
                                 </div>
-                                <ChevronsUpDown className="ml-auto size-4" />
+                                <ChevronRight className="ml-auto size-4" />
                             </SidebarMenuButton>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent
@@ -167,13 +170,17 @@ export function NavUser({ user, isLoading }: NavUserProps) {
                             </DropdownMenuLabel>
                             <DropdownMenuSeparator />
                             <DropdownMenuGroup>
-                                <DropdownMenuItem disabled>
-                                    <CreditCard className="mr-2 size-4" />
-                                    Тарифы
+                                <DropdownMenuItem asChild>
+                                    <Link href="/pro">
+                                        <CreditCard className="mr-2 size-4" />
+                                        Тарифы
+                                    </Link>
                                 </DropdownMenuItem>
-                                <DropdownMenuItem disabled>
-                                    <Settings className="mr-2 size-4" />
-                                    Настройки
+                                <DropdownMenuItem asChild>
+                                    <Link href="/settings">
+                                        <Settings className="mr-2 size-4" />
+                                        Настройки
+                                    </Link>
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem onClick={() => {

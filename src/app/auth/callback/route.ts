@@ -24,30 +24,19 @@ export async function GET(request: Request) {
     if (!error && data.user) {
       // Создаем или обновляем пользователя в нашей БД
       try {
-        const name = data.user.user_metadata?.full_name || data.user.user_metadata?.name || null;
+        const fullName = data.user.user_metadata?.full_name || data.user.user_metadata?.name || null;
         const avatar = data.user.user_metadata?.avatar_url || data.user.user_metadata?.picture || null;
-
-        // Разбиваем имя на firstName и lastName
-        let firstName: string | null = null;
-        let lastName: string | null = null;
-        if (name) {
-          const nameParts = name.split(' ');
-          firstName = nameParts[0] || null;
-          lastName = nameParts.slice(1).join(' ') || null;
-        }
 
         await prisma.user.upsert({
           where: { id: data.user.id },
           create: {
             id: data.user.id,
             email: data.user.email!,
-            firstName,
-            lastName,
+            fullName,
             avatarUrl: avatar,
           },
           update: {
-            firstName: firstName || undefined,
-            lastName: lastName || undefined,
+            fullName: fullName || undefined,
             avatarUrl: avatar || undefined,
           },
         });
