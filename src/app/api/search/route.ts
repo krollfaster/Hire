@@ -103,11 +103,7 @@ export async function POST(req: Request) {
                 },
             },
             include: {
-                user: {
-                    include: {
-                        profile: true,
-                    },
-                },
+                user: true,
                 graph: true,
             },
         });
@@ -127,12 +123,17 @@ export async function POST(req: Request) {
             const profileText = traitsToText(traits, profession.name, profession.grade);
             const textMatchScore = simpleTextMatch(query, profileText);
 
+            // Формируем имя из firstName и lastName
+            const userName = profession.user
+                ? [profession.user.firstName, profession.user.lastName].filter(Boolean).join(' ') || "Пользователь"
+                : "Пользователь";
+
             return {
                 id: profession.id,
                 userId: profession.userId,
-                name: profession.user?.profile?.fullName || "Пользователь",
+                name: userName,
                 email: profession.user?.email || "",
-                avatar: profession.user?.profile?.avatarUrl || AVATAR_URLS[index % AVATAR_URLS.length],
+                avatar: profession.user?.avatarUrl || AVATAR_URLS[index % AVATAR_URLS.length],
                 professionName: profession.name,
                 grade: profession.grade,
                 profileContent: profileText,
