@@ -134,20 +134,7 @@ export async function DELETE(
             where: { id },
         });
 
-        // Если удалённая профессия была активной - активируем другую
-        if (profession.isActive) {
-            const remaining = await prisma.profession.findFirst({
-                where: { userId: user.id },
-                orderBy: { createdAt: "desc" },
-            });
 
-            if (remaining) {
-                await prisma.profession.update({
-                    where: { id: remaining.id },
-                    data: { isActive: true },
-                });
-            }
-        }
 
         return NextResponse.json({ success: true });
     } catch (error) {
