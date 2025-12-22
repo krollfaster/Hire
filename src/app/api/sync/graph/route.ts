@@ -15,14 +15,15 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        // Условие поиска: либо по переданному ID, либо по флагу isActive
+        // Если professionId не передан - берём первую профессию пользователя
         const whereClause = professionId
             ? { id: professionId, userId: user.id }
-            : { userId: user.id, isActive: true };
+            : { userId: user.id };
 
         // Получаем профессию с графом
         const profession = await prisma.profession.findFirst({
             where: whereClause,
+            orderBy: { createdAt: "desc" },
             include: {
                 graph: true,
             },
@@ -63,17 +64,17 @@ export async function POST(request: NextRequest) {
             },
         });
 
-        // Если professionId не передан - ищем активную профессию
+        // Если professionId не передан - берём первую профессию пользователя
         let targetProfessionId = professionId;
 
         if (!targetProfessionId) {
-            const activeProfession = await prisma.profession.findFirst({
+            const firstProfession = await prisma.profession.findFirst({
                 where: {
                     userId: user.id,
-                    isActive: true,
                 },
+                orderBy: { createdAt: "desc" },
             });
-            targetProfessionId = activeProfession?.id;
+            targetProfessionId = firstProfession?.id;
         }
 
         if (!targetProfessionId) {

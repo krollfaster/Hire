@@ -72,40 +72,49 @@ export default function ProPage() {
         }
     ]
 
-    const comparisonFeatures = [
-        {
-            category: "Основные возможности",
-            items: [
-                { name: "Количество резюме", free: "1", pro: "Безлимитно", proPlus: "Безлимитно" },
-                { name: "Поиск вакансий", free: true, pro: true, proPlus: true },
-                { name: "Хранилище файлов", free: "100 МБ", pro: "1 ГБ", proPlus: "10 ГБ" },
-            ]
-        },
-        {
-            category: "AI возможности",
-            items: [
-                { name: "AI Модель", free: "GPT-3.5", pro: "GPT-4o / Claude 3.5", proPlus: "GPT-4o / Claude 3.5" },
-                { name: "Генерация сопроводительных писем", free: false, pro: true, proPlus: true },
-                { name: "AI-рекрутер (Авто-отклики)", free: false, pro: false, proPlus: "Безлимитно", help: "Персональный агент, который сам ищет вакансии и отправляет отклики." },
-                { name: "Анализ соответствия вакансии", free: "Базовый", pro: "Продвинутый", proPlus: "Продвинутый" },
-            ]
-        },
-        {
-            category: "Аналитика и Граф",
-            items: [
-                { name: "Семантический граф навыков", free: "Базовый", pro: "Полный", proPlus: "Полный" },
-                { name: "Аналитика просмотров", free: "Базовая", pro: "Полная", proPlus: "Полная" },
-                { name: "Анализ рынка зарплат", free: false, pro: false, proPlus: true },
-            ]
-        },
-        {
-            category: "Поддержка",
-            items: [
-                { name: "Уровень поддержки", free: "Email", pro: "Приоритетная", proPlus: "Персональный менеджер" },
-                { name: "Карьерная консультация", free: false, pro: false, proPlus: "1 в месяц" },
-            ]
-        }
-    ]
+    const comparisonFeatures: {
+        category: string;
+        items: Array<{
+            name: string;
+            free: boolean | string;
+            pro: boolean | string;
+            proPlus: boolean | string;
+            help?: string;
+        }>;
+    }[] = [
+            {
+                category: "Основные возможности",
+                items: [
+                    { name: "Количество резюме", free: "1", pro: "Безлимитно", proPlus: "Безлимитно" },
+                    { name: "Поиск вакансий", free: true, pro: true, proPlus: true },
+                    { name: "Хранилище файлов", free: "100 МБ", pro: "1 ГБ", proPlus: "10 ГБ" },
+                ]
+            },
+            {
+                category: "AI возможности",
+                items: [
+                    { name: "AI Модель", free: "GPT-3.5", pro: "GPT-4o / Claude 3.5", proPlus: "GPT-4o / Claude 3.5" },
+                    { name: "Генерация сопроводительных писем", free: false, pro: true, proPlus: true },
+                    { name: "AI-рекрутер (Авто-отклики)", free: false, pro: false, proPlus: "Безлимитно", help: "Персональный агент, который сам ищет вакансии и отправляет отклики." },
+                    { name: "Анализ соответствия вакансии", free: "Базовый", pro: "Продвинутый", proPlus: "Продвинутый" },
+                ]
+            },
+            {
+                category: "Аналитика и Граф",
+                items: [
+                    { name: "Семантический граф навыков", free: "Базовый", pro: "Полный", proPlus: "Полный" },
+                    { name: "Аналитика просмотров", free: "Базовая", pro: "Полная", proPlus: "Полная" },
+                    { name: "Анализ рынка зарплат", free: false, pro: false, proPlus: true },
+                ]
+            },
+            {
+                category: "Поддержка",
+                items: [
+                    { name: "Уровень поддержки", free: "Email", pro: "Приоритетная", proPlus: "Персональный менеджер" },
+                    { name: "Карьерная консультация", free: false, pro: false, proPlus: "1 в месяц" },
+                ]
+            }
+        ]
 
     const renderValue = (value: boolean | string) => {
         if (typeof value === "boolean") {
