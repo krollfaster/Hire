@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { useEffect } from "react"
 import { ChevronsUpDown, Plus, Search, Pencil, Trash2 } from "lucide-react"
 
 import {
@@ -19,27 +20,7 @@ import {
 } from "@/components/ui/sidebar"
 import { useResearcherSearchStore, ResearcherSearch } from "@/stores/useResearcherSearchStore"
 import { SearchQuerySetupModal } from "@/components/search/SearchQuerySetupModal"
-import { useEffect } from "react"
-
-function formatSalary(min: number | null, max: number | null): string {
-    const formatK = (n: number) => {
-        if (n >= 1000) {
-            return `${Math.round(n / 1000)}к`;
-        }
-        return n.toString();
-    };
-
-    if (min && max) {
-        return `${formatK(min)} - ${formatK(max)}`;
-    }
-    if (min) {
-        return `от ${formatK(min)}`;
-    }
-    if (max) {
-        return `до ${formatK(max)}`;
-    }
-    return "";
-}
+import { formatSalary } from "@/lib/formatSalary"
 
 export function ResearcherSwitcher() {
     const { isMobile } = useSidebar()
@@ -51,13 +32,16 @@ export function ResearcherSwitcher() {
         switchSearch,
         deleteSearch,
         isSetupModalOpen,
-        setSetupModalOpen
+        setSetupModalOpen,
+        hasInitialized
     } = useResearcherSearchStore()
     const [searchToEdit, setSearchToEdit] = React.useState<ResearcherSearch | null>(null);
 
     useEffect(() => {
-        loadSearches()
-    }, [loadSearches])
+        if (!hasInitialized) {
+            loadSearches()
+        }
+    }, [loadSearches, hasInitialized])
 
     const handleSwitchSearch = async (search: ResearcherSearch) => {
         if (search.id === activeSearch?.id) return

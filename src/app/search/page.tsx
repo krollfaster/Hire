@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { AppShell } from "@/components/layout";
@@ -18,6 +18,9 @@ interface SearchFilters {
     location: string[];
 }
 
+// Константа для дефолтного значения фильтра
+const DEFAULT_MATCH_SCORE = 70;
+
 export default function SearchPage() {
     const router = useRouter();
     const { createChat } = useMessagesStore();
@@ -28,14 +31,14 @@ export default function SearchPage() {
     const [hasSubmitted, setHasSubmitted] = useState(false);
     const [showFilters, setShowFilters] = useState(false);
     const [filters, setFilters] = useState<SearchFilters>({
-        matchScore: [70],
+        matchScore: [DEFAULT_MATCH_SCORE],
         experience: [],
         location: []
     });
 
     const inputRef = useRef<HTMLInputElement>(null);
 
-    const handleSearch = async () => {
+    const handleSearch = useCallback(async () => {
         if (!searchPrompt.trim()) return;
 
         // Mark as submitted and start search
@@ -43,7 +46,7 @@ export default function SearchPage() {
         setIsSearching(true);
         setError(null);
         setCandidates([]);
-    };
+    }, [searchPrompt]);
 
     // Handle filters sidebar appearance with proper cleanup
     useEffect(() => {
@@ -99,14 +102,6 @@ export default function SearchPage() {
 
         executeSearch();
     }, [isSearching, searchPrompt]);
-
-    const handleNewSearch = () => {
-        setHasSubmitted(false);
-        setShowFilters(false);
-        setCandidates([]);
-        setError(null);
-        setSearchPrompt("");
-    };
 
     const isResearcherLoading = useResearcherSearchStore((state) => state.isLoading);
 
@@ -204,7 +199,7 @@ export default function SearchPage() {
                                                 </TooltipProvider>
 
                                                 {/* Active Filters Badges or Filters Button */}
-                                                {(filters.experience.length > 0 || filters.location.length > 0 || filters.matchScore[0] !== 70) ? (
+                                                {(filters.experience.length > 0 || filters.location.length > 0 || filters.matchScore[0] !== DEFAULT_MATCH_SCORE) ? (
                                                     <ActiveFiltersBadge
                                                         filters={filters}
                                                         onFiltersChange={setFilters}
@@ -399,7 +394,7 @@ export default function SearchPage() {
                                             </TooltipProvider>
 
                                             {/* Active Filters Badges or Filters Button */}
-                                            {(filters.experience.length > 0 || filters.location.length > 0 || filters.matchScore[0] !== 70) ? (
+                                            {(filters.experience.length > 0 || filters.location.length > 0 || filters.matchScore[0] !== DEFAULT_MATCH_SCORE) ? (
                                                 <ActiveFiltersBadge
                                                     filters={filters}
                                                     onFiltersChange={setFilters}

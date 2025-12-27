@@ -10,14 +10,12 @@ import { Switch } from "@/components/ui/switch";
 import { useProfessionStore, Profession, ProfessionStatus } from "@/stores/useProfessionStore";
 import { Loader2, Briefcase, ArrowLeft, ArrowRight, Zap, Eye, Moon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-
-const grades = [
-    { value: "Junior", label: "Junior" },
-    { value: "Middle", label: "Middle" },
-    { value: "Senior", label: "Senior" },
-    { value: "Lead", label: "Lead" },
-    { value: "Manager", label: "Manager" },
-];
+import {
+    GRADES,
+    EMPLOYMENT_TYPES,
+    WORK_FORMATS,
+    TRAVEL_TIMES
+} from "@/lib/constants";
 
 const professionStatuses = [
     { value: "active_search", label: "Активный поиск", icon: Zap },
@@ -28,27 +26,6 @@ const professionStatuses = [
 function getStatusIcon(statusValue: string) {
     return professionStatuses.find(s => s.value === statusValue)?.icon || Zap;
 }
-
-const employmentTypes = [
-    { value: "full-time", label: "Полная занятость" },
-    { value: "part-time", label: "Частичная занятость" },
-    { value: "project", label: "Проектная работа" },
-];
-
-const workFormats = [
-    { value: "office", label: "Офис" },
-    { value: "remote", label: "Удалёнка" },
-    { value: "hybrid", label: "Гибрид" },
-];
-
-const travelTimes = [
-    { value: "15", label: "До 15 минут" },
-    { value: "30", label: "До 30 минут" },
-    { value: "45", label: "До 45 минут" },
-    { value: "60", label: "До 1 часа" },
-    { value: "90", label: "До 1.5 часов" },
-    { value: "any", label: "Не важно" },
-];
 
 const stepVariants = {
     initial: (direction: number) => ({
@@ -288,7 +265,7 @@ export function ProfessionSetupModal({
                                             <SelectValue placeholder="Выберите грейд" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {grades.map((g) => (
+                                            {GRADES.map((g) => (
                                                 <SelectItem key={g.value} value={g.value}>
                                                     {g.label}
                                                 </SelectItem>
@@ -370,7 +347,7 @@ export function ProfessionSetupModal({
                                             <SelectValue placeholder="Выберите тип занятости" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {employmentTypes.map((type) => (
+                                            {EMPLOYMENT_TYPES.map((type) => (
                                                 <SelectItem key={type.value} value={type.value}>
                                                     {type.label}
                                                 </SelectItem>
@@ -386,7 +363,7 @@ export function ProfessionSetupModal({
                                             <SelectValue placeholder="Выберите формат работы" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {workFormats.map((format) => (
+                                            {WORK_FORMATS.map((format) => (
                                                 <SelectItem key={format.value} value={format.value}>
                                                     {format.label}
                                                 </SelectItem>
@@ -402,7 +379,7 @@ export function ProfessionSetupModal({
                                             <SelectValue placeholder="Выберите время до работы" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {travelTimes.map((time) => (
+                                            {TRAVEL_TIMES.map((time) => (
                                                 <SelectItem key={time.value} value={time.value}>
                                                     {time.label}
                                                 </SelectItem>

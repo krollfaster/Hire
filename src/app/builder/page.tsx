@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { AppShell, ChatPanel } from "@/components/layout";
-import { useTraitsStore, Trait, NodeType, LegacyCategory, EvidenceLevel } from "@/stores/useTraitsStore";
+import { useTraitsStore, Trait, NodeType, LegacyCategory, EvidenceLevel, EdgeType, LegacyEdgeType } from "@/stores/useTraitsStore";
 import { useChatStore } from "@/stores/useChatStore";
 import { TraitsGraph } from "@/components/graph/TraitsGraph";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -319,20 +319,21 @@ function TraitCard({ trait, onClick, onHover, isHighlighted }: TraitCardProps) {
                     <div className="flex items-center gap-2">
                         <StarRating value={trait.importance} />
                         {/* Evidence Level Icon */}
-                        {trait.evidenceLevel && (
-                            <div
-                                className={cn(
-                                    "flex justify-center items-center rounded-full w-5 h-5 transition-colors",
-                                    evidenceLevelConfig[trait.evidenceLevel].bgColor
-                                )}
-                                title={evidenceLevelConfig[trait.evidenceLevel].label}
-                            >
-                                {(() => {
-                                    const EvidenceIcon = evidenceLevelConfig[trait.evidenceLevel].icon;
-                                    return <EvidenceIcon size={12} className={evidenceLevelConfig[trait.evidenceLevel].color} />;
-                                })()}
-                            </div>
-                        )}
+                        {trait.evidenceLevel && (() => {
+                            const evidenceConf = evidenceLevelConfig[trait.evidenceLevel];
+                            const EvidenceIcon = evidenceConf.icon;
+                            return (
+                                <div
+                                    className={cn(
+                                        "flex justify-center items-center rounded-full w-5 h-5 transition-colors",
+                                        evidenceConf.bgColor
+                                    )}
+                                    title={evidenceConf.label}
+                                >
+                                    <EvidenceIcon size={12} className={evidenceConf.color} />
+                                </div>
+                            );
+                        })()}
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -399,36 +400,34 @@ function EmptyState({ message, showIcon = true }: { message?: string; showIcon?:
 function TraitsGrid({ traits, onTraitClick }: { traits: Trait[]; onTraitClick: (trait: Trait) => void }) {
     const [hoveredTraitId, setHoveredTraitId] = useState<string | null>(null);
 
-    // Get the set of related trait IDs for the hovered trait
-    const getRelatedIds = (traitId: string | null): Set<string> => {
-        if (!traitId) return new Set();
+    // useMemo: пересчитываем связи только при изменении hoveredTraitId или traits
+    const relatedIds = useMemo(() => {
+        if (!hoveredTraitId) return new Set<string>();
 
-        const hoveredTrait = traits.find(t => t.id === traitId);
-        if (!hoveredTrait) return new Set();
+        const hoveredTrait = traits.find(t => t.id === hoveredTraitId);
+        if (!hoveredTrait) return new Set<string>();
 
-        const relatedIds = new Set<string>();
+        const ids = new Set<string>();
 
         // Add directly related traits (outgoing relations)
         hoveredTrait.relations?.forEach(rel => {
-            relatedIds.add(rel.targetId);
+            ids.add(rel.targetId);
         });
 
         // Add traits that have relations pointing to this trait (incoming relations)
         traits.forEach(t => {
             t.relations?.forEach(rel => {
-                if (rel.targetId === traitId) {
-                    relatedIds.add(t.id);
+                if (rel.targetId === hoveredTraitId) {
+                    ids.add(t.id);
                 }
             });
         });
 
-        return relatedIds;
-    };
-
-    const relatedIds = getRelatedIds(hoveredTraitId);
+        return ids;
+    }, [hoveredTraitId, traits]);
 
     return (
-        <div className="gap-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="gap-3 grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             <AnimatePresence mode="popLayout">
                 {traits.map((trait) => {
                     const isHovered = trait.id === hoveredTraitId;
@@ -484,13 +483,13 @@ function TraitDetailSheet({
     const config = nodeTypeConfig[trait.type] || nodeTypeConfig.SKILL;
     const importance = trait.importance ?? 0;
 
-    // Get related traits details
-    const relatedTraits = trait.relations
+    // Get related traits details (мемоизация не нужна — trait меняется при каждом открытии sheet)
+    const relatedTraits = (trait.relations ?? [])
         .map(relation => {
             const relatedTrait = allTraits.find(t => t.id === relation.targetId);
             return relatedTrait ? { ...relatedTrait, relationType: relation.type } : null;
         })
-        .filter(Boolean) as (Trait & { relationType: string })[];
+        .filter((item): item is Trait & { relationType: EdgeType | LegacyEdgeType } => item !== null);
 
     const evidenceConfig = trait.evidenceLevel ? evidenceLevelConfig[trait.evidenceLevel] : null;
     const EvidenceIcon = evidenceConfig?.icon;
@@ -630,31 +629,31 @@ function TraitsPanel() {
     const [selectedTrait, setSelectedTrait] = useState<Trait | null>(null);
     const [sheetOpen, setSheetOpen] = useState(false);
 
-    const getFilteredTraits = (tabId: FilterTab) => {
-        const filtered = tabId === "all" ? traits : traits.filter(trait => trait.type === tabId);
+    // useMemo: пересчитываем только при изменении traits или activeTab
+    const filteredTraits = useMemo(() => {
+        const filtered = activeTab === "all" ? traits : traits.filter(trait => trait.type === activeTab);
         // Sort by importance (descending - highest importance first)
         return [...filtered].sort((a, b) => (b.importance ?? 0) - (a.importance ?? 0));
-    };
+    }, [traits, activeTab]);
 
-    const filteredTraits = getFilteredTraits(activeTab);
-
-    const handleTraitClick = (trait: Trait) => {
+    // useCallback: передаётся как проп в TraitsGrid
+    const handleTraitClick = useCallback((trait: Trait) => {
         setSelectedTrait(trait);
         setSheetOpen(true);
-    };
+    }, []);
 
-    const handleClearAll = () => {
+    const handleClearAll = useCallback(() => {
         resetChat();
         replaceAllTraits([]);
-    };
+    }, [resetChat, replaceAllTraits]);
 
-    const handleSave = async () => {
+    const handleSave = useCallback(async () => {
         await saveToServer();
-    };
+    }, [saveToServer]);
 
-    const handleResetToSaved = () => {
+    const handleResetToSaved = useCallback(() => {
         resetToSaved();
-    };
+    }, [resetToSaved]);
 
     const isProfessionSwitching = useProfessionStore((state) => state.isSwitching);
     const isTraitsLoading = useTraitsStore((state) => state.isLoading);

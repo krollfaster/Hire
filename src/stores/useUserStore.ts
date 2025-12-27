@@ -1,5 +1,14 @@
 import { create } from 'zustand';
-import { User, Skill, Activity, WorkExperience, Education, Contacts, emptyUser } from '@/data/mock';
+import {
+    User,
+    Skill,
+    Activity,
+    WorkExperience,
+    Education,
+    Contacts,
+    emptyUser
+} from '@/data/mock';
+import { generateId } from './constants';
 
 interface UserState {
     user: User;
@@ -14,32 +23,25 @@ interface UserState {
     addEducation: (education: Education) => void;
     updateEducation: (id: string, updates: Partial<Omit<Education, 'id'>>) => void;
     removeEducation: (id: string) => void;
-    // Existing methods
+    // Skills methods
     addSkill: (skill: Skill) => void;
     removeSkill: (skillId: string) => void;
+    // Stats & Activity
     updateStats: (stats: Partial<User['stats']>) => void;
     addActivity: (activity: Activity) => void;
-
     // Clear all data (for logout)
     clearAll: () => void;
 }
 
-const generateId = () => {
-    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-        return crypto.randomUUID();
-    }
-    return `id-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-};
+// Максимальное количество записей в recentActivity
+const MAX_RECENT_ACTIVITY = 10;
 
 export const useUserStore = create<UserState>((set) => ({
     user: emptyUser,
 
     updateProfile: (updates) =>
         set((state) => ({
-            user: {
-                ...state.user,
-                ...updates,
-            },
+            user: { ...state.user, ...updates },
         })),
 
     updateContacts: (contacts) =>
@@ -54,7 +56,10 @@ export const useUserStore = create<UserState>((set) => ({
         set((state) => ({
             user: {
                 ...state.user,
-                workHistory: [{ ...experience, id: experience.id || generateId() }, ...state.user.workHistory],
+                workHistory: [
+                    { ...experience, id: experience.id || generateId() },
+                    ...state.user.workHistory,
+                ],
             },
         })),
 
@@ -80,7 +85,10 @@ export const useUserStore = create<UserState>((set) => ({
         set((state) => ({
             user: {
                 ...state.user,
-                education: [{ ...education, id: education.id || generateId() }, ...state.user.education],
+                education: [
+                    { ...education, id: education.id || generateId() },
+                    ...state.user.education,
+                ],
             },
         })),
 
@@ -114,7 +122,9 @@ export const useUserStore = create<UserState>((set) => ({
         set((state) => ({
             user: {
                 ...state.user,
-                semanticProfile: state.user.semanticProfile.filter((s) => s.id !== skillId),
+                semanticProfile: state.user.semanticProfile.filter(
+                    (s) => s.id !== skillId
+                ),
             },
         })),
 
@@ -130,12 +140,12 @@ export const useUserStore = create<UserState>((set) => ({
         set((state) => ({
             user: {
                 ...state.user,
-                recentActivity: [activity, ...state.user.recentActivity].slice(0, 10),
+                recentActivity: [activity, ...state.user.recentActivity].slice(
+                    0,
+                    MAX_RECENT_ACTIVITY
+                ),
             },
         })),
 
-    clearAll: () =>
-        set(() => ({
-            user: emptyUser,
-        })),
+    clearAll: () => set({ user: emptyUser }),
 }));

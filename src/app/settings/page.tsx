@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Camera, Loader2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,15 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useProfile } from "@/hooks/useProfile";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/AppSidebar";
+
+// Чистая функция — вынесена за пределы компонента
+const getInitials = (name: string): string => {
+    const parts = name.trim().split(" ");
+    if (parts.length > 1) {
+        return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase() || "??";
+};
 
 export default function SettingsPage() {
     const { profile, displayName, avatarUrl, refetch, isLoading: isProfileLoading } = useProfile();
@@ -34,15 +43,6 @@ export default function SettingsPage() {
         }
     }, [profile]);
 
-    // Fallback для инициалов
-    const getInitials = (name: string) => {
-        const parts = name.trim().split(" ");
-        if (parts.length > 1) {
-            return (parts[0][0] + parts[1][0]).toUpperCase();
-        }
-        return name.slice(0, 2).toUpperCase() || "??";
-    };
-
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
@@ -57,7 +57,7 @@ export default function SettingsPage() {
         }
     };
 
-    const handleSave = async () => {
+    const handleSave = useCallback(async () => {
         setIsSaving(true);
         setError(null);
         setSaveSuccess(false);
@@ -117,7 +117,7 @@ export default function SettingsPage() {
         } finally {
             setIsSaving(false);
         }
-    };
+    }, [selectedFile, currentAvatarUrl, fullName, refetch]);
 
     const displayAvatarUrl = previewUrl || currentAvatarUrl || avatarUrl;
     const initials = getInitials(fullName || displayName);

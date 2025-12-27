@@ -7,114 +7,115 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
-import { Check, Sparkles, Zap, Star, Shield, X, HelpCircle, Info } from "lucide-react"
+import { Check, Sparkles, Zap, Star, Shield, X, Info } from "lucide-react"
 import { useState } from "react"
 import { motion } from "framer-motion"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
+// Статические данные — вынесены за пределы компонента
+const PLANS = [
+    {
+        name: "Free",
+        description: "Для знакомства с платформой",
+        price: "0 ₽",
+        yearlyPrice: "0 ₽",
+        duration: "навсегда",
+        features: [
+            "Базовый семантический профиль",
+            "Стандартные AI модели (GPT-3.5)",
+            "1 активное резюме",
+            "Поиск вакансий",
+            "Базовая аналитика просмотров"
+        ],
+        cta: "Ваш текущий план",
+        variant: "outline" as const,
+        highlight: false
+    },
+    {
+        name: "PRO",
+        description: "Для активного поиска работы",
+        price: "990 ₽",
+        yearlyPrice: "790 ₽",
+        duration: "в месяц",
+        features: [
+            "Всё, что в Free",
+            "Топовые AI модели (GPT-4o, Claude 3.5)",
+            "Умное построение графа навыков",
+            "Генерация сопроводительных писем",
+            "Приоритетная поддержка",
+            "Безлимитное количество резюме"
+        ],
+        cta: "Попробовать PRO",
+        variant: "default" as const,
+        highlight: true,
+        popular: true
+    },
+    {
+        name: "PRO+",
+        description: "Для максимального результата",
+        price: "2490 ₽",
+        yearlyPrice: "1990 ₽",
+        duration: "в месяц",
+        features: [
+            "Всё, что в PRO",
+            "Персональный AI-агент рекрутер",
+            "Авто-отклики на вакансии",
+            "Анализ рынка зарплат",
+            "Консультация карьерного ментора",
+            "Ранний доступ к новым функциям"
+        ],
+        cta: "Выбрать PRO+",
+        variant: "outline" as const,
+        highlight: false
+    }
+];
+
+const COMPARISON_FEATURES: {
+    category: string;
+    items: Array<{
+        name: string;
+        free: boolean | string;
+        pro: boolean | string;
+        proPlus: boolean | string;
+        help?: string;
+    }>;
+}[] = [
+        {
+            category: "Основные возможности",
+            items: [
+                { name: "Количество резюме", free: "1", pro: "Безлимитно", proPlus: "Безлимитно" },
+                { name: "Поиск вакансий", free: true, pro: true, proPlus: true },
+                { name: "Хранилище файлов", free: "100 МБ", pro: "1 ГБ", proPlus: "10 ГБ" },
+            ]
+        },
+        {
+            category: "AI возможности",
+            items: [
+                { name: "AI Модель", free: "GPT-3.5", pro: "GPT-4o / Claude 3.5", proPlus: "GPT-4o / Claude 3.5" },
+                { name: "Генерация сопроводительных писем", free: false, pro: true, proPlus: true },
+                { name: "AI-рекрутер (Авто-отклики)", free: false, pro: false, proPlus: "Безлимитно", help: "Персональный агент, который сам ищет вакансии и отправляет отклики." },
+                { name: "Анализ соответствия вакансии", free: "Базовый", pro: "Продвинутый", proPlus: "Продвинутый" },
+            ]
+        },
+        {
+            category: "Аналитика и Граф",
+            items: [
+                { name: "Семантический граф навыков", free: "Базовый", pro: "Полный", proPlus: "Полный" },
+                { name: "Аналитика просмотров", free: "Базовая", pro: "Полная", proPlus: "Полная" },
+                { name: "Анализ рынка зарплат", free: false, pro: false, proPlus: true },
+            ]
+        },
+        {
+            category: "Поддержка",
+            items: [
+                { name: "Уровень поддержки", free: "Email", pro: "Приоритетная", proPlus: "Персональный менеджер" },
+                { name: "Карьерная консультация", free: false, pro: false, proPlus: "1 в месяц" },
+            ]
+        }
+    ];
+
 export default function ProPage() {
     const [isAnnual, setIsAnnual] = useState(false)
-
-    const plans = [
-        {
-            name: "Free",
-            description: "Для знакомства с платформой",
-            price: "0 ₽",
-            yearlyPrice: "0 ₽",
-            duration: "навсегда",
-            features: [
-                "Базовый семантический профиль",
-                "Стандартные AI модели (GPT-3.5)",
-                "1 активное резюме",
-                "Поиск вакансий",
-                "Базовая аналитика просмотров"
-            ],
-            cta: "Ваш текущий план",
-            variant: "outline" as const,
-            highlight: false
-        },
-        {
-            name: "PRO",
-            description: "Для активного поиска работы",
-            price: "990 ₽",
-            yearlyPrice: "790 ₽",
-            duration: "в месяц",
-            features: [
-                "Всё, что в Free",
-                "Топовые AI модели (GPT-4o, Claude 3.5)",
-                "Умное построение графа навыков",
-                "Генерация сопроводительных писем",
-                "Приоритетная поддержка",
-                "Безлимитное количество резюме"
-            ],
-            cta: "Попробовать PRO",
-            variant: "default" as const,
-            highlight: true,
-            popular: true
-        },
-        {
-            name: "PRO+",
-            description: "Для максимального результата",
-            price: "2490 ₽",
-            yearlyPrice: "1990 ₽",
-            duration: "в месяц",
-            features: [
-                "Всё, что в PRO",
-                "Персональный AI-агент рекрутер",
-                "Авто-отклики на вакансии",
-                "Анализ рынка зарплат",
-                "Консультация карьерного ментора",
-                "Ранний доступ к новым функциям"
-            ],
-            cta: "Выбрать PRO+",
-            variant: "outline" as const,
-            highlight: false
-        }
-    ]
-
-    const comparisonFeatures: {
-        category: string;
-        items: Array<{
-            name: string;
-            free: boolean | string;
-            pro: boolean | string;
-            proPlus: boolean | string;
-            help?: string;
-        }>;
-    }[] = [
-            {
-                category: "Основные возможности",
-                items: [
-                    { name: "Количество резюме", free: "1", pro: "Безлимитно", proPlus: "Безлимитно" },
-                    { name: "Поиск вакансий", free: true, pro: true, proPlus: true },
-                    { name: "Хранилище файлов", free: "100 МБ", pro: "1 ГБ", proPlus: "10 ГБ" },
-                ]
-            },
-            {
-                category: "AI возможности",
-                items: [
-                    { name: "AI Модель", free: "GPT-3.5", pro: "GPT-4o / Claude 3.5", proPlus: "GPT-4o / Claude 3.5" },
-                    { name: "Генерация сопроводительных писем", free: false, pro: true, proPlus: true },
-                    { name: "AI-рекрутер (Авто-отклики)", free: false, pro: false, proPlus: "Безлимитно", help: "Персональный агент, который сам ищет вакансии и отправляет отклики." },
-                    { name: "Анализ соответствия вакансии", free: "Базовый", pro: "Продвинутый", proPlus: "Продвинутый" },
-                ]
-            },
-            {
-                category: "Аналитика и Граф",
-                items: [
-                    { name: "Семантический граф навыков", free: "Базовый", pro: "Полный", proPlus: "Полный" },
-                    { name: "Аналитика просмотров", free: "Базовая", pro: "Полная", proPlus: "Полная" },
-                    { name: "Анализ рынка зарплат", free: false, pro: false, proPlus: true },
-                ]
-            },
-            {
-                category: "Поддержка",
-                items: [
-                    { name: "Уровень поддержки", free: "Email", pro: "Приоритетная", proPlus: "Персональный менеджер" },
-                    { name: "Карьерная консультация", free: false, pro: false, proPlus: "1 в месяц" },
-                ]
-            }
-        ]
 
     const renderValue = (value: boolean | string) => {
         if (typeof value === "boolean") {
@@ -180,7 +181,7 @@ export default function ProPage() {
 
                     {/* Plans Grid */}
                     <div className="gap-8 grid md:grid-cols-3 w-full">
-                        {plans.map((plan, index) => (
+                        {PLANS.map((plan, index) => (
                             <motion.div
                                 key={plan.name}
                                 initial={{ opacity: 0, y: 20 }}
@@ -293,14 +294,15 @@ export default function ProPage() {
                                 <div className="font-semibold text-amber-500 text-lg text-center">PRO+</div>
                             </div>
 
-                            {comparisonFeatures.map((category, catIndex) => (
-                                <div key={catIndex}>
+
+                            {COMPARISON_FEATURES.map((category) => (
+                                <div key={category.category}>
                                     <div className="bg-muted/30 px-6 py-3 font-semibold text-muted-foreground text-sm uppercase tracking-wider">
                                         {category.category}
                                     </div>
-                                    {category.items.map((item, itemIndex) => (
+                                    {category.items.map((item) => (
                                         <div
-                                            key={itemIndex}
+                                            key={item.name}
                                             className="items-center grid grid-cols-4 hover:bg-white/5 px-6 py-4 border-border/30 last:border-0 border-b transition-colors"
                                         >
                                             <div className="flex items-center gap-2 font-medium">

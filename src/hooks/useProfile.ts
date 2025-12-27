@@ -29,11 +29,12 @@ export function useProfile() {
     }, [user, fetchProfile]);
 
     // Функция для мгновенного обновления профиля (для оптимистичного UI)
-    const updateProfileLocally = useCallback((updates: Partial<typeof profile>) => {
-        if (profile) {
-            setProfile({ ...profile, ...updates });
+    const updateProfileLocally = useCallback((updates: Partial<NonNullable<typeof profile>>) => {
+        const currentProfile = useProfileStore.getState().profile;
+        if (currentProfile) {
+            setProfile({ ...currentProfile, ...updates });
         }
-    }, [profile, setProfile]);
+    }, [setProfile]);
 
     // Приоритет: профиль из store (включая localStorage) > user_metadata > email
     const displayName = profile?.fullName ||

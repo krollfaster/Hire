@@ -1,5 +1,12 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { STORAGE_KEYS, createLocalStorageHelper } from './constants';
+import type { UserRole } from './constants';
+
+// Хелпер для работы с последним активным чатом
+const lastActiveProfessionStorage = createLocalStorageHelper<string>(
+    STORAGE_KEYS.LAST_ACTIVE_PROFESSION
+);
 
 // Типы для чата
 interface ChatUser {
@@ -43,19 +50,19 @@ export interface ChatMessage {
     isRead: boolean;
     createdAt: string;
     sender: ChatUser;
-    isOptimistic?: boolean; // Флаг для оптимайстик сообщений
+    isOptimistic?: boolean;
 }
 
 interface MessagesState {
     chats: Chat[];
     activeChat: Chat | null;
     activeChatMessages: ChatMessage[];
-    messagesCache: Record<string, ChatMessage[]>; // Кэш сообщений: chatId -> messages
+    messagesCache: Record<string, ChatMessage[]>;
     isLoading: boolean;
     isLoadingMessages: boolean;
 
     // Actions
-    fetchChats: (mode?: 'candidate' | 'recruiter') => Promise<void>;
+    fetchChats: (mode?: UserRole, contextId?: string) => Promise<void>;
     setActiveChat: (chatId: string | null) => Promise<void>;
     sendMessage: (content: string, currentUserId: string) => Promise<void>;
     createChat: (professionId: string, initialMessage?: string) => Promise<Chat>;
@@ -63,26 +70,55 @@ interface MessagesState {
     clearAll: () => void;
 }
 
+const INITIAL_STATE: Omit<MessagesState, 'fetchChats' | 'setActiveChat' | 'sendMessage' | 'createChat' | 'markAsRead' | 'clearAll'> = {
+    chats: [],
+    activeChat: null,
+    activeChatMessages: [],
+    messagesCache: {},
+    isLoading: false,
+    isLoadingMessages: false,
+};
+
+// Хелпер для создания optimistic сообщения
+const createOptimisticMessage = (
+    chatId: string,
+    content: string,
+    currentUserId: string
+): ChatMessage => ({
+    id: `temp-${Date.now()}`,
+    chatId,
+    senderId: currentUserId,
+    content: content.trim(),
+    isRead: false,
+    createdAt: new Date().toISOString(),
+    sender: {
+        id: currentUserId,
+        fullName: null,
+        avatarUrl: null,
+    },
+    isOptimistic: true,
+});
+
 export const useMessagesStore = create<MessagesState>()(
     persist(
         (set, get) => ({
-            chats: [],
-            activeChat: null,
-            activeChatMessages: [],
-            messagesCache: {},
-            isLoading: false,
-            isLoadingMessages: false,
+            ...INITIAL_STATE,
 
-            fetchChats: async (mode: 'candidate' | 'recruiter' = 'candidate') => {
-                // Если чаты уже есть, не ставим isLoading в true, чтобы не мигало
-                // Но если чатов нет, показываем лоадер
-                if (get().chats.length === 0) {
-                    set({ isLoading: true });
-                }
+            fetchChats: async (mode: UserRole = 'candidate', contextId?: string) => {
+                // Сбрасываем чаты при смене контекста и показываем лоадер
+                set({ chats: [], isLoading: true });
 
                 try {
-                    const response = await fetch(`/api/messages?mode=${mode}`);
-                    if (!response.ok) throw new Error('Failed to fetch chats');
+                    const contextParam = mode === 'recruiter'
+                        ? (contextId ? `&researcherSearchId=${contextId}` : '')
+                        : (contextId ? `&professionId=${contextId}` : '');
+
+                    const response = await fetch(`/api/messages?mode=${mode}${contextParam}`);
+
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch chats');
+                    }
+
                     const data = await response.json();
                     set({ chats: data.chats || [], isLoading: false });
                 } catch (error) {
@@ -100,39 +136,42 @@ export const useMessagesStore = create<MessagesState>()(
                 const { chats, messagesCache } = get();
                 const chat = chats.find((c) => c.id === chatId) || null;
 
-                // 1. Сразу показываем данные из кэша если есть (Stale-While-Revalidate)
+                // Stale-While-Revalidate: сразу показываем данные из кэша если есть
                 const cachedMessages = messagesCache[chatId];
                 if (cachedMessages) {
                     set({
                         activeChat: chat,
                         activeChatMessages: cachedMessages,
-                        isLoadingMessages: false
+                        isLoadingMessages: false,
                     });
                 } else {
-                    // Если кэша нет, показываем лоадер
                     set({ activeChat: chat, isLoadingMessages: true });
                 }
 
                 try {
-                    // 2. В фоне загружаем свежие данные
+                    // В фоне загружаем свежие данные
                     const response = await fetch(`/api/messages/${chatId}`);
-                    if (!response.ok) throw new Error('Failed to fetch messages');
-                    const data = await response.json();
 
-                    // 3. Обновляем состояние и кэш
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch messages');
+                    }
+
+                    const data = await response.json();
+                    const messages = data.messages || [];
+
+                    // Обновляем состояние и кэш
                     set((state) => ({
-                        activeChatMessages: data.messages || [],
+                        activeChatMessages: messages,
                         messagesCache: {
                             ...state.messagesCache,
-                            [chatId]: data.messages || []
+                            [chatId]: messages,
                         },
-                        // Обновляем activeChat с данными из API
                         activeChat: chat ? {
                             ...chat,
                             companion: data.chat?.companion || chat.companion,
                             context: data.chat?.context || chat.context,
                         } : null,
-                        isLoadingMessages: false
+                        isLoadingMessages: false,
                     }));
 
                     // Обновляем счётчик непрочитанных в списке чатов
@@ -151,40 +190,28 @@ export const useMessagesStore = create<MessagesState>()(
             },
 
             sendMessage: async (content, currentUserId) => {
-                const { activeChat, activeChatMessages } = get();
-                if (!activeChat || !content.trim()) return;
+                const { activeChat } = get();
 
-                const tempId = `temp-${Date.now()}`;
+                if (!activeChat || !content.trim()) {
+                    return;
+                }
 
-                // Создаем optimistic сообщение
-                // Нам нужно знать currentUserId для правильного отображения. 
-                // Передадим его параметром или возьмем заглушку пока не придет ответ.
-                // В идеале store должен знать currentUserId, но пока передадим аргументом.
-                const optimisticMessage: ChatMessage = {
-                    id: tempId,
-                    chatId: activeChat.id,
-                    senderId: currentUserId,
-                    content: content.trim(),
-                    isRead: false,
-                    createdAt: new Date().toISOString(),
-                    sender: {
-                        id: currentUserId,
-                        fullName: null, // Будет обновлено сервером
-                        avatarUrl: null
-                    },
-                    isOptimistic: true
-                };
+                const optimisticMessage = createOptimisticMessage(
+                    activeChat.id,
+                    content,
+                    currentUserId
+                );
+                const tempId = optimisticMessage.id;
 
-                // 1. Optimistic Update UI
+                // Optimistic Update UI
                 set((state) => {
                     const newMessages = [...state.activeChatMessages, optimisticMessage];
                     return {
                         activeChatMessages: newMessages,
-                        // Сразу обновляем кэш
                         messagesCache: {
                             ...state.messagesCache,
-                            [activeChat.id]: newMessages
-                        }
+                            [activeChat.id]: newMessages,
+                        },
                     };
                 });
 
@@ -195,13 +222,16 @@ export const useMessagesStore = create<MessagesState>()(
                         body: JSON.stringify({ content }),
                     });
 
-                    if (!response.ok) throw new Error('Failed to send message');
-                    const data = await response.json();
+                    if (!response.ok) {
+                        throw new Error('Failed to send message');
+                    }
 
-                    // 2. Заменяем optimistic сообщение на реальное
+                    const data = await response.json();
+                    const realMessage = data.message;
+
+                    // Заменяем optimistic сообщение на реальное
                     set((state) => {
-                        const realMessage = data.message;
-                        const newMessages = state.activeChatMessages.map(m =>
+                        const newMessages = state.activeChatMessages.map((m) =>
                             m.id === tempId ? realMessage : m
                         );
 
@@ -209,9 +239,8 @@ export const useMessagesStore = create<MessagesState>()(
                             activeChatMessages: newMessages,
                             messagesCache: {
                                 ...state.messagesCache,
-                                [activeChat.id]: newMessages
+                                [activeChat.id]: newMessages,
                             },
-                            // Обновляем последнее сообщение в списке чатов
                             chats: state.chats.map((c) =>
                                 c.id === activeChat.id
                                     ? {
@@ -233,13 +262,15 @@ export const useMessagesStore = create<MessagesState>()(
                     console.error('Failed to send message:', error);
                     // Откат optimistic update в случае ошибки
                     set((state) => {
-                        const newMessages = state.activeChatMessages.filter(m => m.id !== tempId);
+                        const newMessages = state.activeChatMessages.filter(
+                            (m) => m.id !== tempId
+                        );
                         return {
                             activeChatMessages: newMessages,
                             messagesCache: {
                                 ...state.messagesCache,
-                                [activeChat.id]: newMessages
-                            }
+                                [activeChat.id]: newMessages,
+                            },
                         };
                     });
                 }
@@ -247,6 +278,7 @@ export const useMessagesStore = create<MessagesState>()(
 
             createChat: async (professionId: string, initialMessage?: string) => {
                 set({ isLoading: true });
+
                 try {
                     const response = await fetch('/api/messages/start', {
                         method: 'POST',
@@ -262,14 +294,18 @@ export const useMessagesStore = create<MessagesState>()(
                     const data = await response.json();
                     const newChat = data.chat;
 
-                    // Если чат уже был в списке, обновляем его
-                    // Если нет, добавляем в начало
+                    // Добавляем или обновляем чат в списке
                     set((state) => {
-                        const existingChatIndex = state.chats.findIndex(c => c.id === newChat.id);
+                        const existingChatIndex = state.chats.findIndex(
+                            (c) => c.id === newChat.id
+                        );
                         let updatedChats = [...state.chats];
 
                         if (existingChatIndex >= 0) {
-                            updatedChats[existingChatIndex] = { ...updatedChats[existingChatIndex], ...newChat };
+                            updatedChats[existingChatIndex] = {
+                                ...updatedChats[existingChatIndex],
+                                ...newChat,
+                            };
                         } else {
                             updatedChats = [newChat, ...updatedChats];
                         }
@@ -277,7 +313,7 @@ export const useMessagesStore = create<MessagesState>()(
                         return {
                             chats: updatedChats,
                             activeChat: newChat,
-                            activeChatMessages: [], // Сообщения подгрузятся через setActiveChat
+                            activeChatMessages: [],
                         };
                     });
 
@@ -285,7 +321,6 @@ export const useMessagesStore = create<MessagesState>()(
                     await get().setActiveChat(newChat.id);
 
                     return newChat;
-
                 } catch (error) {
                     console.error('Failed to create chat:', error);
                     throw error;
@@ -302,20 +337,14 @@ export const useMessagesStore = create<MessagesState>()(
                 }));
             },
 
-            clearAll: () => set({
-                chats: [],
-                activeChat: null,
-                activeChatMessages: [],
-                messagesCache: {},
-            }),
+            clearAll: () => set(INITIAL_STATE),
         }),
         {
-            name: 'messages-storage', // уникальное имя для localStorage
+            name: STORAGE_KEYS.MESSAGES,
             storage: createJSONStorage(() => localStorage),
-            // Сохраняем только список чатов и кэш сообщений
             partialize: (state) => ({
                 chats: state.chats,
-                messagesCache: state.messagesCache, // Можно добавить ограничение размера кэша
+                messagesCache: state.messagesCache,
             }),
         }
     )

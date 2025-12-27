@@ -2,14 +2,18 @@
 
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
-import { X, SlidersHorizontal, MapPin, Briefcase } from "lucide-react";
+import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+    EXPERIENCE_OPTIONS,
+    LOCATION_OPTIONS,
+    DEFAULT_MATCH_SCORE,
+    MIN_MATCH_SCORE,
+    MAX_MATCH_SCORE
+} from "@/lib/constants";
 
 interface SearchFilters {
     matchScore: number[];
@@ -24,24 +28,6 @@ interface SearchFiltersSidebarProps {
     onFiltersChange: (filters: SearchFilters) => void;
 }
 
-const experienceOptions = [
-    "Junior (1-3 года)",
-    "Middle (3-5 лет)",
-    "Senior (5-8 лет)",
-    "Lead (8+ лет)"
-];
-
-const locationOptions = [
-    "Москва",
-    "Санкт-Петербург",
-    "Екатеринбург",
-    "Новосибирск",
-    "Казань",
-    "Удаленно"
-];
-
-
-
 export const SearchFiltersSidebar = ({
     isOpen,
     onClose,
@@ -55,17 +41,18 @@ export const SearchFiltersSidebar = ({
         setLocalFilters(filters);
     }, [filters]);
 
-    const handleFilterChange = (key: keyof SearchFilters, value: any) => {
+    const handleFilterChange = <K extends keyof SearchFilters>(
+        key: K,
+        value: SearchFilters[K]
+    ) => {
         const newFilters = { ...localFilters, [key]: value };
         setLocalFilters(newFilters);
         onFiltersChange(newFilters);
     };
 
-
-
     const clearAllFilters = () => {
         const emptyFilters: SearchFilters = {
-            matchScore: [70],
+            matchScore: [DEFAULT_MATCH_SCORE],
             experience: [],
             location: [],
         };
@@ -119,15 +106,15 @@ export const SearchFiltersSidebar = ({
                             <Slider
                                 value={localFilters.matchScore}
                                 onValueChange={(value) => handleFilterChange('matchScore', value)}
-                                max={100}
-                                min={40}
+                                max={MAX_MATCH_SCORE}
+                                min={MIN_MATCH_SCORE}
                                 step={5}
                                 className="w-full"
                             />
                             <div className="flex justify-between mt-1 text-muted-foreground text-xs">
-                                <span>40%</span>
+                                <span>{MIN_MATCH_SCORE}%</span>
                                 <span className="font-medium text-primary">{localFilters.matchScore[0]}%</span>
-                                <span>100%</span>
+                                <span>{MAX_MATCH_SCORE}%</span>
                             </div>
                         </div>
                     </div>
@@ -138,7 +125,7 @@ export const SearchFiltersSidebar = ({
                             Опыт работы
                         </Label>
                         <div className="space-y-2">
-                            {experienceOptions.map((exp) => (
+                            {EXPERIENCE_OPTIONS.map((exp) => (
                                 <div key={exp} className="flex items-center space-x-2">
                                     <Checkbox
                                         id={`exp-${exp}`}
@@ -168,7 +155,7 @@ export const SearchFiltersSidebar = ({
                             Локация
                         </Label>
                         <div className="space-y-2">
-                            {locationOptions.map((location) => (
+                            {LOCATION_OPTIONS.map((location) => (
                                 <div key={location} className="flex items-center space-x-2">
                                     <Checkbox
                                         id={`loc-${location}`}

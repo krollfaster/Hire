@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { STORAGE_KEYS } from './constants';
 
 interface ProfileData {
     id?: string;
@@ -22,23 +23,27 @@ interface ProfileState {
     clearAll: () => void;
 }
 
+const INITIAL_STATE = {
+    profile: null,
+    isLoading: false,
+    hasFetched: false,
+    currentUserId: null,
+} as const;
+
 export const useProfileStore = create<ProfileState>()(
     persist(
         (set, get) => ({
-            profile: null,
-            isLoading: false,
-            hasFetched: false,
-            currentUserId: null,
+            ...INITIAL_STATE,
 
             setProfile: (profile) => set({ profile }),
 
             setLoading: (isLoading) => set({ isLoading }),
 
             fetchProfile: async (userId: string, force = false) => {
-                const state = get();
+                const { hasFetched, currentUserId } = get();
 
                 // Don't refetch if same user and already fetched (unless forced)
-                if (!force && state.hasFetched && state.currentUserId === userId) {
+                if (!force && hasFetched && currentUserId === userId) {
                     return;
                 }
 
@@ -61,15 +66,10 @@ export const useProfileStore = create<ProfileState>()(
                 }
             },
 
-            clearAll: () => set({
-                profile: null,
-                isLoading: false,
-                hasFetched: false,
-                currentUserId: null,
-            }),
+            clearAll: () => set(INITIAL_STATE),
         }),
         {
-            name: 'profile-storage',
+            name: STORAGE_KEYS.PROFILE,
             storage: createJSONStorage(() => localStorage),
             partialize: (state) => ({
                 profile: state.profile,

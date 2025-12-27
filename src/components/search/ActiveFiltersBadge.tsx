@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { DEFAULT_MATCH_SCORE } from "@/lib/constants";
 
 interface SearchFilters {
     matchScore: number[];
@@ -21,7 +22,7 @@ export const ActiveFiltersBadge = ({
     onFiltersChange,
     className = ""
 }: ActiveFiltersBadgeProps) => {
-    const hasActiveFilters = filters.experience.length > 0 || filters.location.length > 0 || filters.matchScore[0] !== 70;
+    const hasActiveFilters = filters.experience.length > 0 || filters.location.length > 0 || filters.matchScore[0] !== DEFAULT_MATCH_SCORE;
 
     const removeExperienceFilter = (expToRemove: string) => {
         const newFilters = {
@@ -42,7 +43,7 @@ export const ActiveFiltersBadge = ({
     const resetMatchScoreFilter = () => {
         const newFilters = {
             ...filters,
-            matchScore: [70]
+            matchScore: [DEFAULT_MATCH_SCORE]
         };
         onFiltersChange(newFilters);
     };
@@ -65,7 +66,7 @@ export const ActiveFiltersBadge = ({
                     >
                         <Badge
                             variant="secondary"
-                            className="flex items-center gap-1 text-xs px-2 py-1 cursor-pointer hover:bg-secondary/80"
+                            className="flex items-center gap-1 hover:bg-secondary/80 px-2 py-1 text-xs cursor-pointer"
                         >
                             Совпадение: {filters.matchScore[0]}%
                             <button
@@ -90,7 +91,7 @@ export const ActiveFiltersBadge = ({
                     >
                         <Badge
                             variant="secondary"
-                            className="flex items-center gap-1 text-xs px-2 py-1 cursor-pointer hover:bg-secondary/80"
+                            className="flex items-center gap-1 hover:bg-secondary/80 px-2 py-1 text-xs cursor-pointer"
                         >
                             {exp}
                             <button
@@ -115,7 +116,7 @@ export const ActiveFiltersBadge = ({
                     >
                         <Badge
                             variant="secondary"
-                            className="flex items-center gap-1 text-xs px-2 py-1 cursor-pointer hover:bg-secondary/80"
+                            className="flex items-center gap-1 hover:bg-secondary/80 px-2 py-1 text-xs cursor-pointer"
                         >
                             {loc}
                             <button

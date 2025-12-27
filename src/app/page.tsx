@@ -2,7 +2,7 @@
 
 import { motion, useScroll, useTransform } from "framer-motion";
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Sparkles, Brain, Search, Users, Zap, CheckCircle, MessageSquare, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,9 +14,8 @@ export default function LandingPage() {
   const pageRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const { setRole } = useRoleStore();
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated } = useAuth();
   const [authModalOpen, setAuthModalOpen] = useState(false);
-  const [pendingAction, setPendingAction] = useState<'candidate' | 'recruiter' | null>(null);
 
   const { scrollYProgress } = useScroll({
     target: pageRef,
@@ -27,25 +26,23 @@ export default function LandingPage() {
   const gridParallax = useTransform(scrollYProgress, [0, 1], [0, -70]);
   const glowParallax = useTransform(scrollYProgress, [0, 1], [0, -200]);
 
-  const handleRecruiterDemo = () => {
+  const handleRecruiterDemo = useCallback(() => {
     if (isAuthenticated) {
       setRole('recruiter');
       router.push('/search');
     } else {
-      setPendingAction('recruiter');
       setAuthModalOpen(true);
     }
-  };
+  }, [isAuthenticated, setRole, router]);
 
-  const handleCandidateJoin = () => {
+  const handleCandidateJoin = useCallback(() => {
     if (isAuthenticated) {
       setRole('candidate');
       router.push('/builder');
     } else {
-      setPendingAction('candidate');
       setAuthModalOpen(true);
     }
-  };
+  }, [isAuthenticated, setRole, router]);
 
   return (
     <div ref={pageRef} className="relative bg-background min-h-screen overflow-hidden">

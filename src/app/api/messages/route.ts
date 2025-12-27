@@ -7,6 +7,8 @@ export async function GET(request: NextRequest) {
     try {
         const { searchParams } = new URL(request.url);
         const mode = searchParams.get('mode') || 'candidate';
+        const professionId = searchParams.get('professionId');
+        const researcherSearchId = searchParams.get('researcherSearchId');
 
         const supabase = await createClient();
         const { data: { user } } = await supabase.auth.getUser();
@@ -15,12 +17,18 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        // Фильтруем чаты по режиму:
-        // - candidate: показываем чаты где пользователь — кандидат
-        // - recruiter: показываем чаты где пользователь — ресерчер
+        // Фильтруем чаты по режиму и контексту:
+        // - candidate: показываем чаты где пользователь — кандидат (+ фильтр по professionId)
+        // - recruiter: показываем чаты где пользователь — ресерчер (+ фильтр по researcherSearchId)
         const whereClause = mode === 'recruiter'
-            ? { researcherUserId: user.id }
-            : { candidateUserId: user.id };
+            ? {
+                researcherUserId: user.id,
+                ...(researcherSearchId && { researcherSearchId })
+            }
+            : {
+                candidateUserId: user.id,
+                ...(professionId && { professionId })
+            };
 
         const chats = await prisma.chat.findMany({
             where: whereClause,

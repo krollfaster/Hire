@@ -1,7 +1,9 @@
 import { create } from "zustand";
-import { TraitAction } from "./useTraitsStore";
+import type { TraitAction } from "./useTraitsStore";
 
-
+/**
+ * Сообщение AI-чата (builder)
+ */
 export interface ChatMessage {
     id: string;
     content: string;
@@ -10,15 +12,12 @@ export interface ChatMessage {
     actions?: TraitAction[];
 }
 
-
 interface ChatState {
     messages: ChatMessage[];
     isLoading: boolean;
     setMessages: (messages: ChatMessage[]) => void;
     addMessage: (message: ChatMessage) => void;
     reset: () => void;
-
-    // Clear all data (for logout)
     clearAll: () => void;
 }
 
@@ -26,24 +25,18 @@ export const useChatStore = create<ChatState>((set) => ({
     messages: [],
     isLoading: false,
 
-    setMessages: (messages) => {
-        set({ messages });
-    },
+    setMessages: (messages) => set({ messages }),
 
-    addMessage: (message) => {
+    addMessage: (message) =>
         set((state) => ({
             messages: [...state.messages, message],
-        }));
-    },
+        })),
 
-    reset: () => {
-        set({ messages: [] });
-    },
+    reset: () => set({ messages: [] }),
 
-    clearAll: () => {
+    clearAll: () =>
         set({
             messages: [],
             isLoading: false,
-        });
-    },
+        }),
 }));

@@ -5,7 +5,7 @@
  */
 
 // STAR-Graph node types
-export type NodeType = 
+export type NodeType =
     | "ROLE" | "DOMAIN" | "SKILL"      // Layer 1: Assets
     | "CHALLENGE" | "ACTION"            // Layer 2: Actions
     | "METRIC" | "ARTIFACT"             // Layer 3: Impact
@@ -44,6 +44,29 @@ function getSemanticGroup(type: NodeType | LegacyCategory): string {
 }
 
 /**
+ * Форматирует группу traits в строку
+ */
+function formatTraitGroup(traits: Trait[], prefix: string): string | null {
+    if (traits.length === 0) return null;
+    const texts = traits
+        .sort((a, b) => b.importance - a.importance)
+        .map(t => `${t.label}: ${t.description}`);
+    return `${prefix}: ${texts.join("; ")}`;
+}
+
+/** Маппинг групп на русские названия */
+const GROUP_LABELS: Record<string, string> = {
+    skills: "Навыки",
+    roles: "Роли",
+    domains: "Сферы экспертизы",
+    challenges: "Решённые проблемы",
+    actions: "Ключевые действия",
+    metrics: "Результаты",
+    artifacts: "Проекты и артефакты",
+    attributes: "Характеристики",
+};
+
+/**
  * Конвертирует массив traits в текст для поиска
  * Поддерживает как legacy категории, так и STAR-Graph типы
  */
@@ -77,68 +100,10 @@ export function traitsToText(traits: Trait[], professionName?: string, grade?: s
         }
     }
 
-    // Добавляем навыки
-    if (groups.skills.length > 0) {
-        const texts = groups.skills
-            .sort((a, b) => b.importance - a.importance)
-            .map(t => `${t.label}: ${t.description}`);
-        parts.push(`Навыки: ${texts.join("; ")}`);
-    }
-
-    // Добавляем роли
-    if (groups.roles.length > 0) {
-        const texts = groups.roles
-            .sort((a, b) => b.importance - a.importance)
-            .map(t => `${t.label}: ${t.description}`);
-        parts.push(`Роли: ${texts.join("; ")}`);
-    }
-
-    // Добавляем домены/контексты
-    if (groups.domains.length > 0) {
-        const texts = groups.domains
-            .sort((a, b) => b.importance - a.importance)
-            .map(t => `${t.label}: ${t.description}`);
-        parts.push(`Сферы экспертизы: ${texts.join("; ")}`);
-    }
-
-    // Добавляем вызовы (challenges)
-    if (groups.challenges.length > 0) {
-        const texts = groups.challenges
-            .sort((a, b) => b.importance - a.importance)
-            .map(t => `${t.label}: ${t.description}`);
-        parts.push(`Решённые проблемы: ${texts.join("; ")}`);
-    }
-
-    // Добавляем действия
-    if (groups.actions.length > 0) {
-        const texts = groups.actions
-            .sort((a, b) => b.importance - a.importance)
-            .map(t => `${t.label}: ${t.description}`);
-        parts.push(`Ключевые действия: ${texts.join("; ")}`);
-    }
-
-    // Добавляем метрики
-    if (groups.metrics.length > 0) {
-        const texts = groups.metrics
-            .sort((a, b) => b.importance - a.importance)
-            .map(t => `${t.label}: ${t.description}`);
-        parts.push(`Результаты: ${texts.join("; ")}`);
-    }
-
-    // Добавляем артефакты (проекты, продукты)
-    if (groups.artifacts.length > 0) {
-        const texts = groups.artifacts
-            .sort((a, b) => b.importance - a.importance)
-            .map(t => `${t.label}: ${t.description}`);
-        parts.push(`Проекты и артефакты: ${texts.join("; ")}`);
-    }
-
-    // Добавляем атрибуты
-    if (groups.attributes.length > 0) {
-        const texts = groups.attributes
-            .sort((a, b) => b.importance - a.importance)
-            .map(t => `${t.label}: ${t.description}`);
-        parts.push(`Характеристики: ${texts.join("; ")}`);
+    // Форматируем все группы
+    for (const [key, label] of Object.entries(GROUP_LABELS)) {
+        const formatted = formatTraitGroup(groups[key], label);
+        if (formatted) parts.push(formatted);
     }
 
     return parts.join("\n\n");
@@ -150,15 +115,15 @@ export function traitsToText(traits: Trait[], professionName?: string, grade?: s
 export function simpleTextMatch(query: string, text: string): number {
     const queryWords = query.toLowerCase().split(/\s+/).filter(w => w.length > 2);
     const textLower = text.toLowerCase();
-    
+
     if (queryWords.length === 0) return 0;
-    
+
     let matchCount = 0;
     for (const word of queryWords) {
         if (textLower.includes(word)) {
             matchCount++;
         }
     }
-    
+
     return matchCount / queryWords.length;
 }

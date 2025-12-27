@@ -1,6 +1,9 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+/** Публичные роуты - доступны без авторизации */
+const PUBLIC_ROUTES = ["/", "/auth"] as const;
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
@@ -40,9 +43,8 @@ export async function updateSession(request: NextRequest) {
   // Защита роутов - если пользователь не авторизован и пытается зайти на защищенные страницы
   const pathname = request.nextUrl.pathname;
 
-  // Публичные роуты - доступны без авторизации
-  const publicRoutes = ["/", "/auth"];
-  const isPublicRoute = publicRoutes.some((route) =>
+  // Проверяем публичные роуты
+  const isPublicRoute = PUBLIC_ROUTES.some((route) =>
     pathname === route || pathname.startsWith("/auth/")
   );
 

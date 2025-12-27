@@ -1,19 +1,18 @@
 import { create } from 'zustand';
-
-type UserRole = 'candidate' | 'recruiter';
+import type { UserRole } from './constants';
 
 interface RoleState {
     role: UserRole;
     setRole: (role: UserRole) => void;
     isRecruiter: () => boolean;
     isCandidate: () => boolean;
-
-    // Clear all data (for logout)
     clearAll: () => void;
 }
 
+const DEFAULT_ROLE: UserRole = 'candidate';
+
 export const useRoleStore = create<RoleState>((set, get) => ({
-    role: 'candidate',
+    role: DEFAULT_ROLE,
 
     setRole: (role) => set({ role }),
 
@@ -21,8 +20,5 @@ export const useRoleStore = create<RoleState>((set, get) => ({
 
     isCandidate: () => get().role === 'candidate',
 
-    clearAll: () => set({
-        role: 'candidate',
-    }),
+    clearAll: () => set({ role: DEFAULT_ROLE }),
 }));
-

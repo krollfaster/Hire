@@ -1,16 +1,20 @@
 "use client";
 
-import React, { Suspense, useEffect, useState } from "react";
+import React, { Suspense, useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { AppShell } from "@/components/layout";
 import { ChatList, ChatWindow } from "@/components/messenger";
 import { useMessagesStore } from "@/stores/useMessagesStore";
 import { useRoleStore } from "@/stores/useRoleStore";
+import { useProfessionStore } from "@/stores/useProfessionStore";
+import { useResearcherSearchStore } from "@/stores/useResearcherSearchStore";
 import { createClient } from "@/lib/supabase/client";
 
 function MessagesContent() {
     const searchParams = useSearchParams();
     const { role } = useRoleStore();
+    const { activeProfession } = useProfessionStore();
+    const { activeSearch } = useResearcherSearchStore();
     const {
         chats,
         activeChat,
@@ -22,12 +26,15 @@ function MessagesContent() {
         sendMessage,
     } = useMessagesStore();
 
-    // Загружаем чаты при монтировании и при смене режима
+    // Загружаем чаты при монтировании и при смене режима или контекста
     useEffect(() => {
-        // Сбрасываем активный чат при смене режима
+        // Сбрасываем активный чат при смене режима/контекста
         setActiveChat(null);
-        fetchChats(role);
-    }, [fetchChats, role, setActiveChat]);
+        const contextId = role === 'recruiter'
+            ? activeSearch?.id
+            : activeProfession?.id;
+        fetchChats(role, contextId);
+    }, [fetchChats, role, setActiveChat, activeProfession?.id, activeSearch?.id]);
 
     // Открываем чат если передан chatId в URL
     useEffect(() => {
@@ -51,15 +58,15 @@ function MessagesContent() {
         getUser();
     }, []);
 
-    const handleSelectChat = (chatId: string) => {
+    const handleSelectChat = useCallback((chatId: string) => {
         setActiveChat(chatId);
-    };
+    }, [setActiveChat]);
 
-    const handleSend = (text: string) => {
+    const handleSend = useCallback((text: string) => {
         if (currentUserId) {
             sendMessage(text, currentUserId);
         }
-    };
+    }, [currentUserId, sendMessage]);
 
     return (
         <div className="flex w-full h-full overflow-hidden">

@@ -9,7 +9,6 @@ export function useDataSync() {
     const { user, isAuthenticated, isLoading: authLoading } = useAuth();
     const loadTraits = useTraitsStore((state) => state.loadFromServer);
     const loadProfessions = useProfessionStore((state) => state.loadFromServer);
-    const cachedProfessions = useProfessionStore((state) => state.professions);
     const hasLoaded = useRef(false);
     const prevUserId = useRef<string | null>(null);
 
@@ -34,18 +33,8 @@ export function useDataSync() {
 
             // Если есть кэшированные профессии с активной профессией
             if (hasCachedProfessions && cachedActiveProfession) {
-                // Проверяем есть ли кэш traits для активной профессии
-                const traitsCache = useTraitsStore.getState().traitsCache;
-                const hasCachedTraits = !!traitsCache[cachedActiveProfession.id];
-
-                if (hasCachedTraits) {
-                    // Данные уже восстановлены из persist, загружаем их в traits
-                    loadTraits(cachedActiveProfession.id);
-                } else {
-                    // Если traits нет в кэше - загружаем с сервера
-                    loadTraits(cachedActiveProfession.id);
-                }
-
+                // Загружаем traits для активной профессии (из кэша или сервера - решает loadFromServer)
+                loadTraits(cachedActiveProfession.id);
                 // Синхронизируем профессии с сервером в фоне
                 loadProfessions();
             } else {
@@ -58,7 +47,7 @@ export function useDataSync() {
                 });
             }
         }
-    }, [isAuthenticated, authLoading, user?.id, loadTraits, loadProfessions, cachedProfessions.length]);
+    }, [isAuthenticated, authLoading, user?.id, loadTraits, loadProfessions]);
 
     return {
         isAuthenticated,

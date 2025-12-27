@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { ChevronsUpDown, Plus, Briefcase, Pencil, Trash2, Check, Zap, Eye, Moon, LucideIcon } from "lucide-react"
+import { ChevronsUpDown, Plus, Pencil, Trash2, Zap, Eye, Moon, Briefcase, LucideIcon } from "lucide-react"
 
 import {
     DropdownMenu,
@@ -20,26 +20,7 @@ import {
 import { useProfessionStore, Profession } from "@/stores/useProfessionStore"
 import { useTraitsStore } from "@/stores/useTraitsStore"
 import { ProfessionSetupModal } from "@/components/profession"
-
-function formatSalary(min: number | null, max: number | null): string {
-    const formatK = (n: number) => {
-        if (n >= 1000) {
-            return `${Math.round(n / 1000)}к`;
-        }
-        return n.toString();
-    };
-
-    if (min && max) {
-        return `${formatK(min)} - ${formatK(max)}`;
-    }
-    if (min) {
-        return `от ${formatK(min)}`;
-    }
-    if (max) {
-        return `до ${formatK(max)}`;
-    }
-    return "";
-}
+import { formatSalary } from "@/lib/formatSalary"
 
 const statusConfig: Record<string, { icon: LucideIcon }> = {
     active_search: { icon: Zap },

@@ -25,7 +25,8 @@ export function useAuth() {
     } finally {
       setIsVerifying(false);
     }
-  }, [supabase.auth, setUser]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- supabase клиент стабилен
+  }, [setUser]);
 
   useEffect(() => {
     // Only fetch user if hydrated and we need to verify
@@ -53,7 +54,8 @@ export function useAuth() {
     return () => {
       subscription.unsubscribe();
     };
-  }, [supabase.auth, refreshUser, isHydrated, setUser]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- supabase клиент стабилен
+  }, [refreshUser, isHydrated, setUser]);
 
   return {
     user,

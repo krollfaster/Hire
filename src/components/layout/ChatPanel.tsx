@@ -3,33 +3,22 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-    Plus,
     ArrowUp,
     Mic,
-    Zap,
     Sparkles,
     Brain,
     Lock,
     ChevronDown,
     Check,
-    Trash2,
     X,
-
     type LucideIcon,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useTraitsStore, TraitAction, NodeType, LegacyCategory, Trait } from "@/stores/useTraitsStore";
-
 import { useChatStore } from "@/stores/useChatStore";
 import { useProfessionStore } from "@/stores/useProfessionStore";
 import { Badge } from "@/components/ui/badge";
-import {
-    ButtonGroup,
-    ButtonGroupSeparator,
-    ButtonGroupText,
-} from "@/components/ui/button-group";
 
 
 type ModelOption = {
@@ -183,180 +172,6 @@ interface Message {
     timestamp: Date;
     actions?: TraitAction[];
 }
-
-interface Workplace {
-    id: string;
-    companyName: string;
-    position: string;
-    startDate: string;
-    endDate: string;
-}
-
-// Modal for creating/editing workplace
-const WorkplaceModal = ({
-    isOpen,
-    onClose,
-    onSave,
-    onDelete,
-    workplace,
-}: {
-    isOpen: boolean;
-    onClose: () => void;
-    onSave: (workplace: Omit<Workplace, "id">) => void;
-    onDelete?: () => void;
-    workplace?: Workplace | null;
-}) => {
-    const [companyName, setCompanyName] = useState(workplace?.companyName || "");
-    const [position, setPosition] = useState(workplace?.position || "");
-    const [startDate, setStartDate] = useState(workplace?.startDate || "");
-    const [endDate, setEndDate] = useState(workplace?.endDate || "");
-
-    useEffect(() => {
-        if (workplace) {
-            setCompanyName(workplace.companyName);
-            setPosition(workplace.position);
-            setStartDate(workplace.startDate);
-            setEndDate(workplace.endDate);
-        } else {
-            setCompanyName("");
-            setPosition("");
-            setStartDate("");
-            setEndDate("");
-        }
-    }, [workplace, isOpen]);
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!companyName.trim() || !position.trim()) return;
-        onSave({ companyName, position, startDate, endDate });
-        onClose();
-    };
-
-    const handleDelete = () => {
-        if (onDelete) {
-            onDelete();
-            onClose();
-        }
-    };
-
-    return (
-        <AnimatePresence>
-            {isOpen && (
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="z-50 fixed inset-0 flex justify-center items-center bg-black/50 backdrop-blur-sm"
-                    onClick={onClose}
-                >
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                        className="bg-card shadow-xl p-6 border border-border rounded-2xl w-[400px]"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <div className="flex justify-between items-center mb-6">
-                            <h3 className="font-bold text-foreground text-lg">
-                                {workplace ? "Редактировать место работы" : "Новое место работы"}
-                            </h3>
-                            <div className="flex items-center gap-1">
-                                {workplace && onDelete && (
-                                    <button
-                                        onClick={handleDelete}
-                                        className="hover:bg-destructive/10 p-1.5 rounded-lg text-muted-foreground hover:text-destructive transition-colors"
-                                        title="Удалить"
-                                    >
-                                        <Trash2 size={18} />
-                                    </button>
-                                )}
-                                <button
-                                    onClick={onClose}
-                                    className="hover:bg-muted p-1.5 rounded-lg text-muted-foreground hover:text-foreground transition-colors"
-                                >
-                                    <X size={18} />
-                                </button>
-                            </div>
-                        </div>
-
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <div>
-                                <label className="block mb-1.5 font-medium text-foreground text-sm">
-                                    Название компании *
-                                </label>
-                                <input
-                                    type="text"
-                                    value={companyName}
-                                    onChange={(e) => setCompanyName(e.target.value)}
-                                    placeholder="Например: Google"
-                                    className="bg-background px-4 py-3 border border-border focus:border-primary/50 rounded-xl focus:outline-none w-full text-foreground placeholder:text-muted-foreground transition-colors"
-                                    required
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block mb-1.5 font-medium text-foreground text-sm">
-                                    Должность *
-                                </label>
-                                <input
-                                    type="text"
-                                    value={position}
-                                    onChange={(e) => setPosition(e.target.value)}
-                                    placeholder="Например: Senior Developer"
-                                    className="bg-background px-4 py-3 border border-border focus:border-primary/50 rounded-xl focus:outline-none w-full text-foreground placeholder:text-muted-foreground transition-colors"
-                                    required
-                                />
-                            </div>
-
-                            <div className="gap-3 grid grid-cols-2">
-                                <div>
-                                    <label className="block mb-1.5 font-medium text-foreground text-sm">
-                                        Начало работы
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={startDate}
-                                        onChange={(e) => setStartDate(e.target.value)}
-                                        placeholder="Янв 2020"
-                                        className="bg-background px-4 py-3 border border-border focus:border-primary/50 rounded-xl focus:outline-none w-full text-foreground placeholder:text-muted-foreground transition-colors"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block mb-1.5 font-medium text-foreground text-sm">
-                                        Конец работы
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={endDate}
-                                        onChange={(e) => setEndDate(e.target.value)}
-                                        placeholder="Настоящее время"
-                                        className="bg-background px-4 py-3 border border-border focus:border-primary/50 rounded-xl focus:outline-none w-full text-foreground placeholder:text-muted-foreground transition-colors"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="flex gap-3 pt-2">
-                                <button
-                                    type="button"
-                                    onClick={onClose}
-                                    className="flex-1 hover:bg-muted px-4 py-3 border border-border rounded-xl text-foreground transition-colors"
-                                >
-                                    Отмена
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="flex-1 bg-primary hover:opacity-90 px-4 py-3 rounded-xl font-medium text-primary-foreground transition-opacity"
-                                >
-                                    {workplace ? "Сохранить" : "Создать"}
-                                </button>
-                            </div>
-                        </form>
-                    </motion.div>
-                </motion.div>
-            )}
-        </AnimatePresence>
-    );
-};
 
 export const ChatPanel = () => {
     const { messages, setMessages } = useChatStore();

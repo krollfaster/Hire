@@ -8,14 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useResearcherSearchStore, ResearcherSearch } from "@/stores/useResearcherSearchStore";
 import { Loader2, Search } from "lucide-react";
-
-const grades = [
-    { value: "Junior", label: "Junior" },
-    { value: "Middle", label: "Middle" },
-    { value: "Senior", label: "Senior" },
-    { value: "Lead", label: "Lead" },
-    { value: "Manager", label: "Manager" },
-];
+import { GRADES } from "@/lib/constants";
 
 interface SearchQuerySetupModalProps {
     open: boolean;
@@ -177,7 +170,7 @@ export function SearchQuerySetupModal({
                                 <SelectValue placeholder="Выберите грейд" />
                             </SelectTrigger>
                             <SelectContent>
-                                {grades.map((g) => (
+                                {GRADES.map((g) => (
                                     <SelectItem key={g.value} value={g.value}>
                                         {g.label}
                                     </SelectItem>

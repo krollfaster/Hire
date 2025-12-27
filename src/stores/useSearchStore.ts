@@ -10,16 +10,23 @@ interface SearchState {
     setQuery: (query: string) => void;
     search: (query: string) => Promise<void>;
     clearResults: () => void;
-
-    // Clear all data (for logout)
     clearAll: () => void;
 }
 
-export const useSearchStore = create<SearchState>((set) => ({
+// Сообщения об ошибках
+const ERROR_MESSAGES = {
+    SEARCH_FAILED: 'Произошла ошибка при поиске. Попробуйте ещё раз.',
+} as const;
+
+const INITIAL_STATE: Omit<SearchState, 'setQuery' | 'search' | 'clearResults' | 'clearAll'> = {
     query: '',
     results: [],
     isSearching: false,
     error: null,
+};
+
+export const useSearchStore = create<SearchState>((set) => ({
+    ...INITIAL_STATE,
 
     setQuery: (query) => set({ query }),
 
@@ -29,9 +36,7 @@ export const useSearchStore = create<SearchState>((set) => ({
         try {
             const response = await fetch('/api/search', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ query }),
             });
 
@@ -46,7 +51,7 @@ export const useSearchStore = create<SearchState>((set) => ({
         } catch (error) {
             console.error('Search error:', error);
             set({
-                error: 'Произошла ошибка при поиске. Попробуйте ещё раз.',
+                error: ERROR_MESSAGES.SEARCH_FAILED,
                 results: [],
                 isSearching: false,
             });
@@ -55,10 +60,5 @@ export const useSearchStore = create<SearchState>((set) => ({
 
     clearResults: () => set({ results: [], query: '', error: null }),
 
-    clearAll: () => set({
-        query: '',
-        results: [],
-        isSearching: false,
-        error: null,
-    }),
+    clearAll: () => set(INITIAL_STATE),
 }));

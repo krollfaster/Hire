@@ -2,7 +2,11 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { STORAGE_KEYS } from './constants';
 
+/**
+ * Данные авторизованного пользователя
+ */
 interface AuthUser {
     id: string;
     email: string;
@@ -32,7 +36,7 @@ export const useAuthStore = create<AuthState>()(
             clearAll: () => set({ user: null }),
         }),
         {
-            name: 'auth-storage',
+            name: STORAGE_KEYS.AUTH,
             onRehydrateStorage: () => (state) => {
                 state?.setHydrated(true);
             },
