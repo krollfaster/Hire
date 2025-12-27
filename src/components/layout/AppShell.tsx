@@ -1,23 +1,42 @@
+"use client"
+
 import { ReactNode } from "react";
-import { Sidebar } from "./Sidebar";
+import { Loader2 } from "lucide-react";
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
+import { AppSidebar } from "./AppSidebar";
+import { useProfessionStore } from "@/stores/useProfessionStore";
+import { useTraitsStore } from "@/stores/useTraitsStore";
+import { useRoleStore } from "@/stores/useRoleStore";
 
 interface AppShellProps {
     children: ReactNode;
 }
 
 export const AppShell = ({ children }: AppShellProps) => {
+    const isSwitching = useProfessionStore((state) => state.isSwitching);
+    const isTraitsLoading = useTraitsStore((state) => state.isLoading);
+    const role = useRoleStore((state) => state.role);
+
+    // Показываем спиннер только для кандидата при переключении профессии
+    const showLoading = role !== 'recruiter' && (isSwitching || isTraitsLoading);
+
     return (
-        <div className="flex bg-background h-screen overflow-hidden">
-            <Sidebar />
-            <div className="flex flex-1 ml-20">
-                <main className="flex-1 bg-background/50 overflow-y-auto">
-                    <div className="mx-auto p-4 w-full h-full">
-                        <div className="flex flex-col justify-center items-center bg-card shadow-sm border border-border rounded-xl h-full min-h-[calc(100vh-3rem)] overflow-hidden">
-                            {children}
-                        </div>
+        <SidebarProvider>
+            <AppSidebar />
+            <SidebarInset className="flex flex-col flex-1 h-screen overflow-hidden">
+                <div className="flex flex-1 overflow-hidden">
+                    <div className="flex flex-col justify-center items-center shadow-sm w-full h-full overflow-hidden">
+                        {showLoading ? (
+                            <div className="flex flex-col justify-center items-center gap-3">
+                                <Loader2 className="size-8 text-primary animate-spin" />
+                                <span className="text-muted-foreground text-sm">Загрузка...</span>
+                            </div>
+                        ) : (
+                            children
+                        )}
                     </div>
-                </main>
-            </div>
-        </div>
+                </div>
+            </SidebarInset>
+        </SidebarProvider>
     );
 };

@@ -1,5 +1,30 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Environment Setup
+
+Create a `.env.local` file in the root directory with the following variables:
+
+```env
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+
+# Site URL for OAuth redirects (важно для правильной работы Google OAuth)
+# Для локальной разработки оставьте пустым или закомментируйте
+# Для продакшена (Vercel) установите полный URL вашего сайта
+NEXT_PUBLIC_SITE_URL=https://your-vercel-app.vercel.app
+
+# Database URL (для Prisma)
+DATABASE_URL=your_database_url
+```
+
+### Настройка Google OAuth для продакшена
+
+1. В Google Cloud Console добавьте URL вашего Vercel приложения в Authorized redirect URIs:
+   - `https://your-vercel-app.vercel.app/auth/callback`
+
+2. На Vercel установите переменную окружения `NEXT_PUBLIC_SITE_URL` равную вашему домену Vercel
+
 ## Getting Started
 
 First, run the development server:

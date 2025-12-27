@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import { DataSyncProvider } from "@/components/providers/DataSyncProvider";
+import { AuthGuard } from "@/components/auth/AuthGuard";
+import { ProfessionGuard } from "@/components/auth/ProfessionGuard";
+import { SearchQueryGuard } from "@/components/auth/SearchQueryGuard";
 
 const inter = Inter({
   variable: "--font-geist-sans",
@@ -13,7 +17,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SemanticTalent — Резюме мертво. Контекст — король.",
+  title: "HireTalant — Резюме мертво. Контекст — король.",
   description: "Платформа найма нового поколения. Кандидаты рассказывают истории, ИИ строит семантический профиль.",
   keywords: ["найм", "рекрутинг", "ИИ", "семантический поиск", "таланты", "портфолио"],
 };
@@ -28,8 +32,14 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${jetbrainsMono.variable} font-sans antialiased`}
       >
-        {children}
+        <DataSyncProvider>
+          {children}
+          <AuthGuard />
+          <ProfessionGuard />
+          <SearchQueryGuard />
+        </DataSyncProvider>
       </body>
     </html>
   );
 }
+

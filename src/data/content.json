@@ -1,0 +1,17 @@
+{
+  "categories": ["skills", "context", "artifacts", "attributes"],
+  "categoryLabels": {
+    "skills": "Компетенции",
+    "context": "Контекст",
+    "artifacts": "Артефакты",
+    "attributes": "Атрибуты"
+  },
+  "relationTypes": {
+    "stack": "Стек",
+    "in_domain": "В сфере",
+    "in_role": "В роли",
+    "result": "Результат",
+    "driver": "Драйвер"
+  },
+  "traits": []
+}
